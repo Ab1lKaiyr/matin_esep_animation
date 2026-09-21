@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мәтіндік есептерді анимациялау</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E9EEF3; --surface:#FFFFFF; --surface-2:#F3F7FA;
+  --ink:#16232E; --muted:#5C7386; --rail:#C4D2DE; --rail-soft:#DCE6EE;
+  --a:#2B4AC4; --b:#C97A12; --c:#1B7A5A; --drain:#B03A32;
+  --ok:#1B7A5A; --warn:#B03A32;
+  --shadow:0 1px 0 rgba(22,35,46,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1A22; --surface:#152632; --surface-2:#1B303E;
+    --ink:#E4EDF3; --muted:#8CA5B6; --rail:#2E4757; --rail-soft:#223846;
+    --a:#8099F5; --b:#EDB45C; --c:#4FC79B; --drain:#E8827A;
+    --ok:#4FC79B; --warn:#E8827A;
+    --shadow:0 1px 0 rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1A22; --surface:#152632; --surface-2:#1B303E;
+  --ink:#E4EDF3; --muted:#8CA5B6; --rail:#2E4757; --rail-soft:#223846;
+  --a:#8099F5; --b:#EDB45C; --c:#4FC79B; --drain:#E8827A;
+  --ok:#4FC79B; --warn:#E8827A;
+  --shadow:0 1px 0 rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:'Onest','Segoe UI',system-ui,-apple-system,sans-serif;
+  font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1120px;margin:0 auto;padding:16px 18px 64px}
+
+.ruler{height:11px;width:100%;
+  background-image:linear-gradient(to right,var(--rail) 1px,transparent 1px);
+  background-size:14px 11px; background-position:bottom left;
+  border-bottom:1px solid var(--rail); opacity:.7; margin:34px 0 22px}
+
+h1{font-size:clamp(25px,4.4vw,38px);line-height:1.12;font-weight:700;
+  letter-spacing:-.022em;margin:0 0 18px;max-width:22ch}
+h2{font-size:18px;font-weight:600;letter-spacing:-.01em;margin:0 0 12px}
+p{margin:0 0 12px;max-width:68ch}
+.lede{color:var(--muted);max-width:60ch;margin-bottom:0}
+
+.panel{background:var(--surface);border:1px solid var(--rail-soft);
+  border-radius:10px;padding:18px;box-shadow:var(--shadow)}
+
+.tabs{display:flex;gap:2px;margin-bottom:12px}
+.tab{font-family:inherit;font-size:15.5px;font-weight:500;color:var(--muted);
+  background:none;border:none;border-bottom:2px solid transparent;
+  padding:8px 2px;margin-right:22px;cursor:pointer;border-radius:0}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);font-weight:600;border-bottom-color:var(--a)}
+
+.stage{background:var(--surface);border:1px solid var(--rail-soft);
+  border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.stage svg{display:block;width:100%;height:auto}
+.road{stroke:var(--rail);stroke-width:2}
+.tick{stroke:var(--rail);stroke-width:1}
+.ticklab{fill:var(--muted);font-size:13px;font-family:'JetBrains Mono',ui-monospace,monospace}
+.bodylab{font-size:15px;font-weight:600;font-family:'Onest',sans-serif}
+.bodyspd{font-size:13px;font-family:'JetBrains Mono',ui-monospace,monospace}
+.gapline{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:5 4}
+.gaplab{fill:var(--ink);font-size:15px;font-weight:600;font-family:'JetBrains Mono',ui-monospace,monospace}
+.meet{stroke:var(--ok);stroke-width:1.5;stroke-dasharray:4 4}
+.meetlab{fill:var(--ok);font-size:13px;font-weight:600}
+.clock{fill:var(--ink);font-size:26px;font-weight:600;font-family:'JetBrains Mono',ui-monospace,monospace}
+.clocklab{fill:var(--muted);font-size:13px}
+.tankwall{fill:none;stroke:var(--rail);stroke-width:2.5}
+.tanklab{fill:var(--muted);font-size:14px}
+.legname{font-size:14.5px;font-weight:600;font-family:'Onest',sans-serif}
+.legsub{fill:var(--muted);font-size:12.5px;font-family:'JetBrains Mono',ui-monospace,monospace}
+.pipe{stroke-width:5;stroke-linecap:round}
+.fullline{stroke:var(--ok);stroke-width:1.5;stroke-dasharray:4 4}
+.wave{fill:none;stroke-width:2.2;opacity:.85}
+.river{fill:var(--a);opacity:.09}
+.bank{stroke:var(--rail);stroke-width:2}
+.stream{stroke:var(--a);stroke-width:2.4;opacity:.3;stroke-linecap:round}
+.veclab{font-size:13px;font-weight:600;font-family:'JetBrains Mono',ui-monospace,monospace}
+.leghdr{fill:var(--ink);font-size:19px;font-weight:600}
+
+.controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+  padding:12px 16px;border-top:1px solid var(--rail-soft);background:var(--surface-2)}
+.scrub{flex:1 1 200px;min-width:150px;accent-color:var(--a)}
+button{font-family:inherit;font-size:15px;color:var(--ink);background:var(--surface);
+  border:1px solid var(--rail);border-radius:7px;padding:7px 14px;cursor:pointer}
+button:hover{border-color:var(--a)}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+.primary{background:var(--a);color:#fff;border-color:var(--a);font-weight:600}
+.primary:hover{opacity:.9}
+.play{min-width:104px}
+.rate{font-family:'JetBrains Mono',monospace;min-width:52px}
+.toggle[aria-pressed="false"]{color:var(--muted)}
+
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media (max-width:840px){.cols{grid-template-columns:1fr}}
+
+textarea{width:100%;min-height:130px;resize:vertical;font-family:inherit;
+  font-size:15.5px;line-height:1.5;color:var(--ink);background:var(--surface-2);
+  border:1px solid var(--rail);border-radius:8px;padding:11px 12px}
+.examples{display:flex;flex-wrap:wrap;gap:7px;margin:11px 0}
+.chip{font-size:13.5px;padding:5px 11px;border-radius:20px;background:var(--surface-2);
+  border:1px solid var(--rail-soft);color:var(--muted);cursor:pointer}
+.chip:hover{color:var(--ink);border-color:var(--a)}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;
+  font-size:15px;margin:0 0 14px;align-items:baseline}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font-weight:500}
+.d0{color:var(--a);font-weight:700}
+.d1{color:var(--b);font-weight:700}
+.d2{color:var(--c);font-weight:700}
+pre{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;line-height:1.55;
+  background:var(--surface-2);border:1px solid var(--rail-soft);border-radius:8px;
+  padding:11px 12px;overflow-x:auto;margin:0}
+details{margin-top:12px}
+summary{cursor:pointer;color:var(--muted);font-size:14.5px}
+summary:hover{color:var(--ink)}
+.trace{margin:10px 0 0;padding:0;list-style:none;font-size:13.5px;
+  font-family:'JetBrains Mono',ui-monospace,monospace;line-height:1.7}
+.trace li{border-left:2px solid var(--rail);padding-left:10px;margin-bottom:3px;color:var(--muted)}
+.trace li.hit{border-color:var(--ok);color:var(--ink)}
+.trace li.miss{border-color:var(--warn)}
+.msg{border-radius:8px;padding:11px 13px;font-size:15px;margin-bottom:14px}
+.msg.err{background:color-mix(in srgb,var(--warn) 12%,transparent);
+  border:1px solid color-mix(in srgb,var(--warn) 35%,transparent)}
+.solution{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:14.5px;line-height:1.9}
+.solution .ans{font-size:17px;font-weight:600;color:var(--ok)}
+
+footer{color:var(--muted);font-size:14px;margin-top:26px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1 id="headline"></h1>
+
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" data-mode="move" aria-selected="true">Қозғалысқа берілген есептер</button>
+  <button class="tab" role="tab" data-mode="work" aria-selected="false">Бірлескен жұмысқа берілген есептер</button>
+  <button class="tab" role="tab" data-mode="river" aria-selected="false">Өзен ағысына берілген есептер</button>
+</div>
+
+<div class="stage">
+  <!-- ══ 1-САХНА: түзу бойымен қозғалыс ══ -->
+  <svg id="sceneMove" viewBox="0 0 1000 300" role="img" aria-label="Екі дене қозғалысының анимациясы">
+    <line id="road" class="road" x1="70" y1="200" x2="930" y2="200"/>
+    <g id="ticks"></g>
+    <line id="meetLine" class="meet" x1="0" y1="128" x2="0" y2="208" style="display:none"/>
+    <text id="meetLab" class="meetlab" x="0" y="122" text-anchor="middle" style="display:none">кездесті</text>
+    <g id="gap">
+      <line id="gapLine" class="gapline" x1="0" y1="104" x2="0" y2="104"/>
+      <text id="gapLab" class="gaplab" x="0" y="96" text-anchor="middle"></text>
+    </g>
+    <g id="figA"></g>
+    <g id="figB"></g>
+    <g id="bodyA">
+      <text class="bodylab" x="0" y="248" text-anchor="middle" fill="var(--a)"></text>
+      <text class="bodyspd" x="0" y="266" text-anchor="middle" fill="var(--muted)"></text>
+    </g>
+    <g id="bodyB">
+      <text class="bodylab" x="0" y="248" text-anchor="middle" fill="var(--b)"></text>
+      <text class="bodyspd" x="0" y="266" text-anchor="middle" fill="var(--muted)"></text>
+    </g>
+    <text class="clocklab" x="70" y="42">өткен уақыт</text>
+    <text id="clockMove" class="clock" x="70" y="76">0 сағат</text>
+  </svg>
+
+  <!-- ══ 2-САХНА: резервуарды толтыру ══ -->
+  <svg id="sceneWork" viewBox="0 0 1000 300" role="img" aria-label="Бірлескен жұмыс мысалының анимациясы" style="display:none">
+    <text class="clocklab" x="40" y="42">өткен уақыт</text>
+    <text id="clockWork" class="clock" x="40" y="76">0 сағат</text>
+    <text class="clocklab" x="40" y="116">орындалған жұмыс</text>
+    <text id="donePct" class="clock" x="40" y="150">0%</text>
+
+    <g id="workFigs"></g>
+    <clipPath id="tankClip"><rect x="392" y="62" width="216" height="198"/></clipPath>
+    <g clip-path="url(#tankClip)">
+      <g id="workFills"></g>
+      <path id="wave" class="wave" d=""/>
+    </g>
+    <g id="workParticles"></g>
+    <rect class="tankwall" x="390" y="60" width="220" height="202" rx="5"/>
+    <line id="fullLine" class="fullline" x1="380" y1="60" x2="620" y2="60" style="display:none"/>
+    <text id="tankLab" class="tanklab" x="500" y="284" text-anchor="middle">бассейн</text>
+    <g id="workLegend"></g>
+  </svg>
+
+  <!-- ══ 3-САХНА: өзен бойымен қозғалыс ══ -->
+  <svg id="sceneRiver" viewBox="0 0 1000 300" role="img" aria-label="Өзен бойымен жүзген кеменің анимациясы" style="display:none">
+    <text class="clocklab" x="40" y="42">өткен уақыт</text>
+    <text id="clockRiver" class="clock" x="40" y="76">0 сағат</text>
+    <text class="clocklab" x="930" y="42" text-anchor="end">жолдың бөлігі</text>
+    <text id="legName" class="leghdr" x="930" y="72" text-anchor="end">ағыс бойымен</text>
+    <text id="riverPos" class="legsub" x="930" y="94" text-anchor="end">0 км</text>
+
+    <rect class="river" x="70" y="186" width="860" height="64" fill="var(--a)" opacity="0.09"/>
+    <line class="bank" x1="70" y1="186" x2="930" y2="186"/>
+    <line class="bank" x1="70" y1="250" x2="930" y2="250"/>
+    <g id="streams"></g>
+    <g id="riverTicks"></g>
+    <line id="turnLine" class="meet" x1="0" y1="120" x2="0" y2="250" style="display:none"/>
+    <text id="turnLab" class="meetlab" x="0" y="172" text-anchor="middle" style="display:none">кері қайтты</text>
+    <g id="riverBoat"></g>
+    <g id="riverVec"></g>
+  </svg>
+
+  <div class="controls">
+    <button id="play" class="primary play">Бастау</button>
+    <input id="scrub" class="scrub" type="range" min="0" max="1000" value="0" aria-label="Уақыт шкаласы">
+    <button id="rate" class="rate">1×</button>
+    <button id="figs" class="toggle" aria-pressed="true">Фигуралар</button>
+    <button id="reset">Қайтадан бастау</button>
+  </div>
+</div>
+
+<div class="ruler"></div>
+
+<p class="lede" id="lede"></p>
+
+<div class="cols">
+  <div class="panel">
+    <h2>Мәтін есептің шарты</h2>
+    <textarea id="input" spellcheck="false"></textarea>
+    <div class="examples" id="examples"></div>
+    <div class="row">
+      <button id="parse" class="primary">Берілуін көрсету</button>
+      <button id="clear">Тазарту</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Алгоритм нені түсінді?</h2>
+    <div id="out"></div>
+  </div>
+</div>
+
+<footer>Талдау, сандық деректер және анимация тікелей браузерде орындалады.
+  Интернетке қосылу қажет емес — бет офлайн режимде жұмыс істейді.</footer>
+</div>
+
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════
+   0. ОРТАҚ КӨМЕКШІ ФУНКЦИЯЛАР
+   ═══════════════════════════════════════════════════════════ */
+
+const $ = id => document.getElementById(id);
+const COLORS = ["var(--a)","var(--b)","var(--c)"];
+
+// қазақ әліпбиінің әріптері — жалғауды тану үшін керек
+const KZ = "а-яәғіқңөұүһ";
+
+function round(x){ return Math.round(x*1000)/1000; }
+function fmt(x){ return String(round(x)).replace(".", ","); }
+
+// Мәтінді бір қалыпқа келтіреміз: кіші әріп, ондық нүкте,
+// сызықшаның бір түрі және өлшем бірліктерінің бір жазылымы.
+// «Сағатына 12 км» деген тіркес «12 км/сағ» түріне келеді —
+// содан кейін барлық жылдамдық бір ережемен табылады.
+function normalize(text){
+  return text.toLowerCase()
+    .replace(/[‒-―−]/g,"-")
+    .replace(/(\d)\s*,\s*(\d)/g,"$1.$2")
+    .replace(/қарама\s+қарсы/g,"қарама-қарсы")
+    .replace(/бір\s+біріне/g,"бір-біріне")
+    .replace(/сағатына\s+(\d+(?:\.\d+)?)\s*км/g,"$1 км/сағ")
+    .replace(/сағатына\s+(\d+(?:\.\d+)?)\s*литр[а-яәғіқңөұүһ]*/g,"$1 л/сағ")
+    .replace(/минутына\s+(\d+(?:\.\d+)?)\s*литр[а-яәғіқңөұүһ]*/g,"$1 л/мин")
+    .replace(/секундына\s+(\d+(?:\.\d+)?)\s*метр[а-яәғіқңөұүһ]*/g,"$1 м/с")
+    .replace(/\s+/g," ");
+}
+
+// Есеп шарты қазақ тілінде ме? Қазақ әліпбиінің өзіндік әріптері
+// немесе қазақша өлшем бірліктері мен түйінді сөздер жеткілікті.
+const RE_KAZAKH = /[әғқңөұүһі]|км\s*\/\s*сағ|сағат|шақырым|минут|литр|жылдамдық|қашықтық/;
+
+function findAll(str, re){
+  const out=[]; let m; re.lastIndex=0;
+  while((m=re.exec(str))!==null){
+    out.push({value:parseFloat(m[1]), unit:(m[2]||"").replace(/\s+/g,""),
+              index:m.index, len:m[0].length, raw:m[0].trim()});
+    if(m.index===re.lastIndex) re.lastIndex++;
+  }
+  return out;
+}
+
+// Табылған бөліктерді сол ұзындықтағы «#» таңбасымен ауыстырамыз:
+// орындар сақталады, ал қайта іздегенде «12 км/сағ» ішіндегі «12»
+// қашықтық ретінде танылмайды.
+function maskOut(str, items){
+  const a=str.split("");
+  for(const it of items) for(let i=it.index;i<it.index+it.len;i++) a[i]="#";
+  return a.join("");
+}
+
+/* ═══════════════════════════════════════════════════════════
+   1. ӨЛШЕМ БІРЛІКТЕРІ
+   Қазақ тілі жалғамалы: «3 сағатта», «6 сағаттан», «12 күнде».
+   Сондықтан бірліктің түбірінен кейін жалғауға жол береміз.
+   ═══════════════════════════════════════════════════════════ */
+
+const RE_SPEED = new RegExp(
+  "(\\d+(?:\\.\\d+)?)\\s*(" +
+  "км\\s*\\/\\s*сағ(?:ат)?|шақырым\\s*\\/\\s*сағ(?:ат)?|" +
+  "метр\\s*\\/\\s*секунд|метр\\s*\\/\\s*минут|" +
+  "м\\s*\\/\\s*мин|м\\s*\\/\\s*с(?![" + KZ + "])" +
+  ")", "g");
+
+// Бірлігі жазылмаған жағдай: «жылдамдығы 12»
+const RE_SPEED_FALLBACK = new RegExp("жылдамд[" + KZ + "]*\\s+(\\d+(?:\\.\\d+)?)", "g");
+
+const RE_DIST = new RegExp(
+  "(\\d+(?:\\.\\d+)?)\\s*(километр[" + KZ + "]*|шақырым[" + KZ + "]*|км|метр[" + KZ + "]*|м)" +
+  "(?![" + KZ + "\\/])", "g");
+
+const RE_TIME = new RegExp(
+  "(\\d+(?:\\.\\d+)?)\\s*(сағат[" + KZ + "]*|сағ|минут[" + KZ + "]*|мин|секунд[" + KZ + "]*|сек)" +
+  "(?![" + KZ + "])", "g");
+
+const toKmh = (v,u)=> /\/с$|секунд/.test(u) ? v*3.6 : (/\/мин|минут/.test(u) ? v*0.06 : v);
+const toKm  = (v,u)=> /^(м$|метр)/.test(u) ? v/1000 : v;
+const toH   = (v,u)=> /^мин/.test(u) ? v/60 : (/^сек/.test(u) ? v/3600 : v);
+
+function hoursLabel(x){
+  const h=Math.floor(x+1e-9), m=Math.round((x-h)*60);
+  if(m===0) return h + " сағат";
+  return h===0 ? m + " минут" : h + " сағат " + m + " минут";
+}
+
+/* ═══════════════════════════════════════════════════════════
+   2. ҚОЗҒАЛЫС ЕСЕПТЕРІ — сөздіктер мен ережелер
+   ═══════════════════════════════════════════════════════════ */
+
+// Сөздің түбірі: жалғау жалғанғанда түбір өзгермейді.
+// Ұзын түбірлер қысқаларынан бұрын тұрады, әйтпесе «жүк көлігі»
+// ішіндегі «көлі» жеке қатысушы болып кетеді.
+const NOUNS = [
+  ["велосипедш","Велосипедші"],   ["мотоциклш","Мотоциклші"],
+  ["жүргізуш","Жүргізуші"],       ["жаяу","Жаяу жүргінші"],
+  ["электр пойыз","Электр пойызы"],["тікұша","Тікұшақ"],
+  ["жүк көлі","Жүк көлігі"],      ["автобус","Автобус"],
+  ["автомобил","Автомобиль"],     ["мотоцикл","Мотоцикл"],
+  ["трактор","Трактор"],          ["самокат","Самокат"],
+  ["шаңғыш","Шаңғышы"],           ["салт атты","Салт атты"],
+  ["тасба","Тасбақа"],            ["пойыз","Пойыз"],
+  ["катер","Катер"],              ["қайы","Қайық"],
+  ["кеме","Кеме"],                ["машина","Машина"],
+  ["көлі","Көлік"],               ["турист","Турист"],
+  ["жүзуш","Жүзуші"],             ["жүгіруш","Жүгіруші"],
+  ["ұл бала","Ұл бала"],          ["қыз бала","Қыз бала"],
+  ["ұша","Ұшақ"],                 ["қоян","Қоян"],
+  ["қасқыр","Қасқыр"],            ["ит","Ит"]
+];
+
+// Сөздік бойынша қатысушыларды табады. Екі ереже:
+// түбір сөздің басынан басталуы керек («бітті» ішіндегі «ит»
+// қатысушы емес) және бұрын табылған сөзбен қабаттаспауы керек.
+const RE_LETTER = new RegExp("[" + KZ + "]");
+function findNouns(s, list){
+  const occ=[];
+  const overlaps=(i,len)=> occ.some(o => i < o.index+o.len && o.index < i+len);
+  for(const [stem,name] of list){
+    let i=s.indexOf(stem);
+    while(i!==-1){
+      const wordStart = i===0 || !RE_LETTER.test(s[i-1]);
+      if(wordStart && !overlaps(i, stem.length))
+        occ.push({name, index:i, len:stem.length});
+      i=s.indexOf(stem, i+1);
+    }
+  }
+  occ.sort((x,y)=>x.index-y.index);
+  const names=[];
+  for(const o of occ) if(!names.includes(o.name)) names.push(o.name);
+  return {occ, names};
+}
+
+// Реті маңызды: «қуып жету» — бірмәнді белгі, сондықтан алдында тұр.
+// Сосын «қарама-қарсы бағыттарда» (алшақтау), содан кейін кездесу.
+const TYPE_RULES = [
+  {re:/қуып\s*жет|қуып\s*кет|қуа\s+шық|соңынан|артынан|ізінше|бір\s+бағытта|сол\s+бағытта|бірдей\s+бағытта/,
+   type:"chase", label:"қуып жету"},
+  {re:/қарама-қарсы\s+бағыт|әр\s*түрлі\s+бағыт|екі\s+түрлі\s+бағыт|кері\s+бағытта|бір-бірінен\s+алыс|алыстап/,
+   type:"apart", label:"қарама-қарсы бағыттарда"},
+  {re:/бір-біріне|кездес|қарсы\s+бет|қарама-қарсы\s+шық|қарсы\s+жүр|қарсы\s+қарай/,
+   type:"toward", label:"бір-біріне қарама-қарсы"}
+];
+
+const ASK_RULES = [
+  {re:/қанша\s+уақыт|неше\s+сағат|қанша\s+сағат|неше\s+минут|қанша\s+минут|уақыттан\s+кейін|қашан\s+кездес|қашан\s+қуып|қай\s+уақытта/,
+   ask:"time", label:"уақыт"},
+  {re:/қандай\s+қашықтық|ара\s+қашықтығ|қашықтығы\s+қандай|қанша\s+километр|неше\s+километр|қанша\s+шақырым|қандай\s+жол|неше\s+км/,
+   ask:"distance", label:"қашықтық"},
+  {re:/жылдамдығын\s+та[пб]|жылдамдықты\s+та[пб]|жылдамдығы\s+қандай|қандай\s+жылдамдық|жылдамдығы\s+неге\s+тең/,
+   ask:"speed", label:"жылдамдық"}
+];
+
+/* ——— 2.1 қозғалыс талдаушысы ——— */
+function parseMove(text){
+  const trace=[];
+  const hit =s=>trace.push({cls:"hit", t:s});
+  const miss=s=>trace.push({cls:"miss",t:s});
+  const note=s=>trace.push({cls:"",    t:s});
+
+  const s = normalize(text);
+  const model = {kind:"move", names:[], speeds:[], distance:null, time:null,
+                 type:null, ask:null, trace};
+
+  let speeds = findAll(s, RE_SPEED);
+  let masked = maskOut(s, speeds);
+  speeds.forEach(x=>hit(`жылдамдық: «${x.raw}» → ${fmt(toKmh(x.value,x.unit))} км/сағ`));
+
+  if(speeds.length < 2){
+    const extra = findAll(masked, RE_SPEED_FALLBACK).map(x=>({...x, unit:"км/сағ"}));
+    extra.forEach(x=>hit(`бірлігі жазылмаған жылдамдық: «${x.raw}» → ${fmt(x.value)} км/сағ`));
+    speeds = speeds.concat(extra);
+    masked = maskOut(masked, extra);
+  }
+  if(speeds.length === 0) miss("жылдамдықтар табылмады");
+
+  const dists = findAll(masked, RE_DIST);
+  if(dists.length){
+    model.distance = toKm(dists[0].value, dists[0].unit);
+    hit(`қашықтық: «${dists[0].raw}» → ${fmt(model.distance)} км`);
+    masked = maskOut(masked, dists);
+  } else miss("қашықтық табылмады");
+
+  const times = findAll(masked, RE_TIME);
+  if(times.length){
+    model.time = toH(times[0].value, times[0].unit);
+    hit(`уақыт: «${times[0].raw}» → ${fmt(model.time)} сағат`);
+  } else note("шартта уақыт берілмеген");
+
+  for(const r of TYPE_RULES){
+    if(r.re.test(s)){ model.type=r.type; model.typeLabel=r.label;
+      hit(`қозғалыс түрі: ${r.label}`); break; }
+  }
+  if(!model.type){
+    model.type="toward"; model.typeLabel="бір-біріне қарама-қарсы (болжам)";
+    miss("түрін көрсететін түйінді сөз табылмады → әдепкі түр алынды");
+  }
+
+  for(const r of ASK_RULES){
+    if(r.re.test(s)){ model.ask=r.ask; hit(`ізделінді шама: ${r.label}`); break; }
+  }
+  if(!model.ask){
+    model.ask = model.time!==null ? "distance" : "time";
+    miss("сұрақ танылмады → шама бар деректер бойынша таңдалды");
+  }
+
+  const nm = findNouns(s, NOUNS);
+  if(nm.names.length) hit(`қатысушылар: ${nm.names.slice(0,2).join(", ")}`);
+  else miss("қатысушылар сөздікте танылмады → «Бірінші» және «Екінші»");
+
+  // Жылдамдық кімге тиесілі: сол жағындағы ең жақын сөзге беріледі.
+  const pairs = speeds.slice(0,2).map(sp=>{
+    const before = nm.occ.filter(o=>o.index < sp.index);
+    return {v: round(toKmh(sp.value, sp.unit)),
+            owner: before.length ? before[before.length-1].name : null};
+  });
+  pairs.forEach(p=>{ if(p.owner) note(`${fmt(p.v)} км/сағ «${p.owner}» дегенге қатысты (сол жағындағы ең жақын сөз)`); });
+
+  const used=new Set(pairs.map(p=>p.owner).filter(Boolean));
+  const fallback=["Бірінші","Екінші"];
+  model.speeds = pairs.map(p=>p.v);
+  model.names  = pairs.map((p,i)=>{
+    if(p.owner) return p.owner;
+    const free = nm.names.find(x=>!used.has(x));
+    if(free){ used.add(free); return free; }
+    return fallback[i];
+  });
+  if(model.names[0] === model.names[1]) model.names = [model.names[0]+" 1", model.names[1]+" 2"];
+
+  return model;
+}
+
+/* ——— 2.2 қозғалыс шешушісі ——— */
+function solveMove(m){
+  const [v1,v2]=m.speeds, D=m.distance, t=m.time;
+  if(m.speeds.length<2) return {error:"Екі жылдамдықты таба алмадым. Оларды нақты жазыңыз, мысалы «12 км/сағ жылдамдықпен»."};
+
+  if(m.type==="toward" && m.ask==="time"){
+    if(D===null) return {error:"Қатысушылар арасындағы қашықтықты таба алмадым. Мысалы «олардың арасы 34 км» деп қосыңыз."};
+    const ans=D/(v1+v2);
+    return {value:ans, unit:"time", steps:[
+      "жақындау жылдамдығы:",
+      `v = ${fmt(v1)} + ${fmt(v2)} = ${fmt(v1+v2)} км/сағ`,
+      "кездескенге дейінгі уақыт:",
+      `t = ${fmt(D)} : ${fmt(v1+v2)} = ${fmt(ans)} сағат`
+    ]};
+  }
+  if(m.type==="chase" && m.ask==="time"){
+    if(D===null) return {error:"Қатысушылар арасындағы бастапқы ара қашықтықты таба алмадым. Мысалы «олардың арасы 90 км» деп қосыңыз."};
+    const fast=Math.max(v1,v2), slow=Math.min(v1,v2);
+    if(fast===slow) return {error:"Жылдамдықтар тең — қуып жету мүмкін емес."};
+    const ans=D/(fast-slow);
+    return {value:ans, unit:"time", steps:[
+      "жақындау жылдамдығы:",
+      `v = ${fmt(fast)} − ${fmt(slow)} = ${fmt(fast-slow)} км/сағ`,
+      "қуып жеткенге дейінгі уақыт:",
+      `t = ${fmt(D)} : ${fmt(fast-slow)} = ${fmt(ans)} сағат`
+    ]};
+  }
+  if(m.type==="apart" && m.ask==="distance"){
+    if(t===null) return {error:"Уақытты таба алмадым. Мысалы «3 сағаттан кейін» деп қосыңыз."};
+    const ans=(v1+v2)*t;
+    return {value:ans, unit:"distance", steps:[
+      "алыстау жылдамдығы:",
+      `v = ${fmt(v1)} + ${fmt(v2)} = ${fmt(v1+v2)} км/сағ`,
+      "олардың ара қашықтығы:",
+      `s = ${fmt(v1+v2)} · ${fmt(t)} = ${fmt(ans)} км`
+    ]};
+  }
+  if((m.type==="toward"||m.type==="chase") && m.ask==="distance"){
+    if(t===null || D===null) return {error:"Бұл сұрақ үшін қашықтық та, уақыт та керек."};
+    const v = m.type==="toward" ? v1+v2 : Math.abs(v1-v2);
+    const ans=D-v*t;
+    return {value:ans, unit:"distance", steps:[
+      `жақындау жылдамдығы: v = ${fmt(v)} км/сағ`,
+      `s = ${fmt(D)} − ${fmt(v)} · ${fmt(t)} = ${fmt(ans)} км`
+    ]};
+  }
+  return {error:"Есептің бұл түрі әзірге қолданылмайды. «Қозғалыс» қойындысы шешеді: кездесуге қозғалыс, қуып жету және қарама-қарсы бағыттағы қозғалыс."};
+}
+
+/* ═══════════════════════════════════════════════════════════
+   3. БІРЛЕСКЕН ЖҰМЫС ЕСЕПТЕРІ — сөздіктер мен ережелер
+   ═══════════════════════════════════════════════════════════ */
+
+// Қазақ тілінде тектік жіктеу жоқ, сондықтан реттік санау бір қалыпты:
+// «Бірінші құбыр», «Бірінші сорғы».
+const WORK_NOUNS = [
+  ["тракторш","Тракторшы"],   ["экскаватор","Экскаватор"],
+  ["баспаханаш","Баспаханашы"],["ағаш ұста","Ағаш ұстасы"],
+  ["қалаушы","Қалаушы"],      ["сырлаушы","Сырлаушы"],
+  ["комбайн","Комбайн"],      ["принтер","Принтер"],
+  ["жұмысш","Жұмысшы"],       ["шебер","Шебер"],
+  ["тігінш","Тігінші"],       ["оқушы","Оқушы"],
+  ["сорғы","Сорғы"],          ["станок","Станок"],
+  ["кран","Кран"],            ["бригада","Бригада"],
+  ["құбыр","Құбыр"],          ["машина","Машина"]
+];
+const ORD = ["Бірінші","Екінші","Үшінші"];
+
+const TARGETS = [
+  ["қазаншұңқыр","қазаншұңқыр"], ["резервуар","резервуар"],
+  ["цистерна","цистерна"],       ["тапсырыс","тапсырыс"],
+  ["бассейн","бассейн"],         ["қабырға","қабырға"],
+  ["қоршау","қоршау"],           ["алқап","алқап"],
+  ["ванна","ванна"],             ["бак","бак"],
+  ["жол","жол"],                 ["жұмыс","жұмыс"]
+];
+
+const RE_WTIME = new RegExp(
+  "(\\d+(?:\\.\\d+)?)\\s*(сағат[" + KZ + "]*|сағ|минут[" + KZ + "]*|мин|" +
+  "тәулік[" + KZ + "]*|күн[" + KZ + "]*|секунд[" + KZ + "]*|сек)(?![" + KZ + "])", "g");
+
+const RE_FLOW = new RegExp(
+  "(\\d+(?:\\.\\d+)?)\\s*(л\\s*\\/\\s*мин|литр\\s*\\/\\s*минут|" +
+  "л\\s*\\/\\s*сағ(?:ат)?|литр\\s*\\/\\s*сағат|л\\s*\\/\\s*с(?![" + KZ + "]))", "g");
+
+const RE_VOL = new RegExp("(\\d+(?:\\.\\d+)?)\\s*(литр[" + KZ + "]*|л)(?![" + KZ + "\\/])", "g");
+
+const RE_DRAIN = /босат|босай|босап|ағыз|төг|сорып|азайт|құйып\s+ал/;
+const RE_JOINT = /бірге|бірлесіп|бірігіп|қосылып|қатар\s+жұмыс/;
+
+// Бәрін сағатқа келтіреміз, бірақ шартта қандай бірлік болғанын есте сақтаймыз.
+const UNITS = {
+  h:   {mul:1,      short:"сағ", word:"сағат"},
+  min: {mul:1/60,   short:"мин", word:"минут"},
+  d:   {mul:24,     short:"күн", word:"күн"},
+  s:   {mul:1/3600, short:"с",   word:"секунд"}
+};
+function unitKey(u){
+  if(/^мин/.test(u)) return "min";
+  if(/^(күн|тәулік)/.test(u)) return "d";
+  if(/^сек/.test(u)) return "s";
+  return "h";
+}
+// сағат → таңдалған бірлік
+function durFull(hoursValue, key){
+  const U=UNITS[key];
+  return fmt(Math.round(hoursValue/U.mul*100)/100) + " " + U.word;
+}
+function durShort(hoursValue, key){
+  const U=UNITS[key];
+  return fmt(Math.round(hoursValue/U.mul*100)/100) + " " + U.short;
+}
+
+/* ——— 3.1 бірлескен жұмыс талдаушысы ——— */
+function parseWork(text){
+  const trace=[];
+  const hit =s=>trace.push({cls:"hit", t:s});
+  const miss=s=>trace.push({cls:"miss",t:s});
+  const note=s=>trace.push({cls:"",    t:s});
+
+  const s = normalize(text);
+  const model = {kind:"work", parts:[], joint:null, unit:"h",
+                 target:"жұмыс", trace, ask:"time"};
+
+  /* — нені толтырады немесе нені жасайды — */
+  for(const [stem,name] of TARGETS){
+    if(s.includes(stem)){ model.target=name; hit(`жұмыс нысаны: ${name}`); break; }
+  }
+
+  /* — «минутына литр» нұсқасы: өнімділік тікелей берілген — */
+  const flows = findAll(s, RE_FLOW);
+  if(flows.length >= 2){
+    let masked = maskOut(s, flows);
+    const vols = findAll(masked, RE_VOL);
+    flows.forEach(f=>hit(`өнімділік: «${f.raw}»`));
+    if(!vols.length){
+      miss("резервуардың көлемі табылмады");
+      return finishWork(model, s, [], null);
+    }
+    const V = vols[0].value;
+    hit(`көлем: «${vols[0].raw}» → ${fmt(V)} литр`);
+    model.kind="workFlow"; model.volume=V;
+    model.unit = /мин|минут/.test(flows[0].unit) ? "min"
+               : (/\/с$|секунд/.test(flows[0].unit) ? "s" : "h");
+    const perHour = f => /мин|минут/.test(f.unit) ? f.value*60
+                        : (/\/с$|секунд/.test(f.unit) ? f.value*3600 : f.value);
+    model.parts = flows.slice(0,3).map(f=>({
+      index:f.index, sign:1, flow:f.value, unitRaw:f.unit,
+      rate: perHour(f)/V,           // резервуардың сағаттағы үлесі
+      T: V/perHour(f)
+    }));
+    return finishWork(model, s, model.parts, null);
+  }
+
+  /* — негізгі нұсқа: әрқайсысының бүкіл жұмысқа өз мерзімі бар — */
+  const times = findAll(s, RE_WTIME);
+  if(!times.length){
+    miss("жұмысты орындау мерзімдері табылмады");
+    return finishWork(model, s, [], null);
+  }
+  model.unit = unitKey(times[0].unit);
+  hit(`шарттағы уақыт бірлігі: ${UNITS[model.unit].short}`);
+
+  let joint=null; const parts=[];
+  let prevEnd=0;
+  times.forEach((tm, k)=>{
+    const preWin = s.slice(prevEnd, tm.index);          // сан алдындағы мәтін
+    const after  = tm.index + tm.len;
+    const nextStart = (k+1 < times.length) ? times[k+1].index : s.length;
+    // Қазақ тілінде етістік санның артында тұрады («6 сағатта босайды»),
+    // сондықтан ағызуды санның оң жағынан да іздейміз — сөйлем шегінде.
+    let postWin = s.slice(after, nextStart);
+    const stop = postWin.search(/[.!?;]/);
+    if(stop !== -1) postWin = postWin.slice(0, stop);
+    prevEnd = after;
+    const H = tm.value * UNITS[unitKey(tm.unit)].mul;
+
+    if(RE_JOINT.test(preWin) && joint===null){
+      joint = H;
+      hit(`бірлескен уақыт: «${tm.raw}» (сан алдында «бірге» сөзі бар)`);
+      return;
+    }
+    const drains = RE_DRAIN.test(preWin) || RE_DRAIN.test(postWin);
+    if(drains) hit(`«${tm.raw}» → босатады, өнімділік минус таңбамен`);
+    else       hit(`жұмыс мерзімі: «${tm.raw}»`);
+    parts.push({index:tm.index, sign:drains?-1:1, T:H, rate:(drains?-1:1)/H});
+  });
+  return finishWork(model, s, parts.slice(0,3), joint);
+}
+
+// Ортақ соңы: қатысушылардың аты және сұрақты тану.
+function finishWork(model, s, parts, joint){
+  const trace=model.trace;
+  const hit =x=>trace.push({cls:"hit", t:x});
+  const miss=x=>trace.push({cls:"miss",t:x});
+
+  model.parts=parts; model.joint=joint;
+
+  // қатысушының зат есімі: сөздіктен табылған біріншісін аламыз
+  let noun=null;
+  for(const [stem,name] of WORK_NOUNS){
+    if(s.indexOf(stem)!==-1){ noun=name; break; }
+  }
+  const total = parts.length + (joint!==null ? 1 : 0);
+  if(noun) hit(`қатысушылар: ${noun.toLowerCase()} (${total > 1 ? "бірнеше" : "бір"})`);
+  else miss("қатысушылар сөздікте танылмады → «Бірінші», «Екінші»");
+
+  model.noun=noun;
+  parts.forEach((p,i)=>{
+    p.name = noun ? `${ORD[i]} ${noun.toLowerCase()}` : ORD[i];
+  });
+
+  if(/қанша\s+уақыт|неше\s+сағат|қанша\s+сағат|неше\s+күн|қанша\s+күн|неше\s+минут|қанша\s+минут|уақыт\s+керек|уақыт\s+қажет|қанша\s+уақытта/.test(s))
+    hit("ізделінді шама: уақыт");
+  else miss("сұрақ танылмады → әдепкі бойынша уақыт есептеледі");
+
+  return model;
+}
+
+/* ——— 3.2 бірлескен жұмыс шешушісі ——— */
+function solveWork(m){
+  const U=m.unit;
+
+  /* кері есеп: бірлескен уақыт және біреуінің мерзімі белгілі */
+  if(m.joint!==null){
+    if(m.parts.length===0)
+      return {error:"Тек бірлескен уақытты таптым. Кері есеп үшін кем дегенде бір қатысушының мерзімі керек."};
+    const rJoint = 1/m.joint;
+    const rKnown = m.parts.reduce((a,p)=>a+p.rate,0);
+    const rest = rJoint - rKnown;
+    if(rest <= 1e-9)
+      return {error:"Шарт бойынша екінші қатысушы жұмыс қоспайды — сандарды тексеріңіз."};
+    const T = 1/rest;
+    const name = m.noun ? `${ORD[m.parts.length]} ${m.noun.toLowerCase()}` : ORD[m.parts.length];
+    return {value:T, mode:"inverse", answerName:name, tEnd:m.joint*1.12,
+      parts: m.parts.concat([{name, sign:1, T, rate:rest}]),
+      steps:[
+        `бірлескен өнімділік: 1 : ${durShort(m.joint,U)} = ${fmt(round(rJoint*UNITS[U].mul))} (1 ${UNITS[U].short} ішінде)`,
+        `біріншісінің өнімділігі: 1 : ${durShort(m.parts[0].T,U)} = ${fmt(round(rKnown*UNITS[U].mul))}`,
+        `екіншісіне қалады: ${fmt(round(rest*UNITS[U].mul))}`,
+        `екіншісінің уақыты: 1 : ${fmt(round(rest*UNITS[U].mul))} = ${durShort(T,U)}`
+      ],
+      label:`${name} жұмысты ${durFull(T,U)} ішінде аяқтайды`};
+  }
+
+  /* тура есеп: әрқайсысы өз мерзімінде жұмыс істейді, бірлескен уақытты іздейміз */
+  if(m.parts.length < 2)
+    return {error:"Кем дегенде екі қатысушының мерзімі керек. Оларды нақты жазыңыз, мысалы «бірінші құбыр 3 сағатта, екіншісі 6 сағатта»."};
+
+  const sum = m.parts.reduce((a,p)=>a+p.rate,0);
+  if(sum <= 1e-9)
+    return {error:`Ағып шыққаны құйылғаннан кем емес — ${m.target} толмайды. Шартты тексеріңіз.`};
+
+  const T = 1/sum;
+  const terms = m.parts.map(p=>`${p.sign<0?"−":""}1/${fmt(round(p.T/UNITS[U].mul))}`).join(" + ").replace(/\+ −/g,"− ");
+  return {value:T, mode:"combined", tEnd:T*1.12, parts:m.parts,
+    steps:[
+      `әрқайсысының өнімділігі — 1 ${UNITS[U].short} ішіндегі жұмыс үлесі:`,
+      ...m.parts.map(p=>`${p.name}: 1 : ${durShort(p.T,U)} = ${fmt(round(Math.abs(p.rate)*UNITS[U].mul))}${p.sign<0?" (минус таңбамен)":""}`),
+      "жалпы өнімділік:",
+      `${terms} = ${fmt(round(sum*UNITS[U].mul))} (1 ${UNITS[U].short} ішінде)`,
+      "бірлескен жұмыс уақыты:",
+      `t = 1 : ${fmt(round(sum*UNITS[U].mul))} = ${durShort(T,U)}`
+    ],
+    label:`Бірге ${durFull(T,U)} ішінде аяқтайды`};
+}
+
+/* ═══════════════════════════════════════════════════════════
+   4. ФИГУРАЛАР КІТАПХАНАСЫ
+   Әр фигура жергілікті координатада сызылған: (0,0) нүктесі
+   жолда тұрады, дене жоғары қарай шамамен y = −36 дейін көтеріледі.
+   Дөңгелектер мен аяқтар бөлек берілген — анимация оларды жүрілген
+   жолға пропорционал айналдырады, сондықтан жылдам дене педальді
+   де жылдам айналдырады. Бұл әшекей емес: аяқ пен дөңгелектің
+   қарқыны — жылдамдықтың қосымша белгісі.
+   ═══════════════════════════════════════════════════════════ */
+
+const ST = 'fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"';
+
+const FIG = {
+  cyclist: c => ({
+    b:`<path d="M-11,-8 L-5,-20 L1,-8 M-5,-20 L8,-20 L11,-8 M1,-8 L11,-8" stroke="${c}" ${ST}/>
+       <path d="M-4,-20 L1,-28 M1,-27 L8,-21 M1,-8 L0,-20" stroke="${c}" ${ST}/>
+       <circle cx="3" cy="-31" r="4.2" fill="${c}"/>`,
+    w:[{cx:-11,cy:-8,r:8},{cx:11,cy:-8,r:8}]
+  }),
+  walker: c => ({
+    b:`<circle cx="0" cy="-33" r="4.6" fill="${c}"/>
+       <path d="M0,-28 L0,-15 M0,-25 L-6,-18 M0,-25 L6,-19" stroke="${c}" ${ST}/>`,
+    g:{hx:0,hy:-15,len:15,amp:24,legs:2}, gc:c
+  }),
+  car: c => ({
+    b:`<path d="M-17,-6 L-16,-13 L-8,-13 L-4,-20 L7,-20 L11,-13 L17,-13 L17,-6 Z" stroke="${c}" ${ST}/>
+       <path d="M-3,-19 L-3,-13 M6,-19 L9,-13" stroke="${c}" fill="none" stroke-width="1.5" opacity=".6"/>`,
+    w:[{cx:-9,cy:-6,r:5},{cx:9,cy:-6,r:5}]
+  }),
+  truck: c => ({
+    b:`<path d="M-20,-7 L-20,-24 L-4,-24 L-4,-7 Z" stroke="${c}" ${ST}/>
+       <path d="M-4,-7 L-4,-17 L6,-17 L12,-11 L12,-7 Z" stroke="${c}" ${ST}/>`,
+    w:[{cx:-14,cy:-6,r:5},{cx:7,cy:-6,r:5}]
+  }),
+  bus: c => ({
+    b:`<path d="M-20,-7 L-20,-23 Q-20,-25 -18,-25 L16,-25 Q18,-25 18,-23 L18,-7 Z" stroke="${c}" ${ST}/>
+       <path d="M-14,-21 L-14,-14 M-5,-21 L-5,-14 M4,-21 L4,-14 M13,-21 L13,-14" stroke="${c}" fill="none" stroke-width="1.4" opacity=".55"/>`,
+    w:[{cx:-12,cy:-6,r:5},{cx:10,cy:-6,r:5}]
+  }),
+  train: c => ({
+    b:`<path d="M-21,-7 L-21,-21 L2,-21 L2,-28 L15,-28 L15,-7 Z" stroke="${c}" ${ST}/>
+       <path d="M6,-25 L11,-25 M-16,-18 L-16,-12 M-8,-18 L-8,-12 M0,-18 L0,-12" stroke="${c}" fill="none" stroke-width="1.4" opacity=".55"/>`,
+    w:[{cx:-14,cy:-6,r:4.6},{cx:-3,cy:-6,r:4.6},{cx:9,cy:-6,r:4.6}]
+  }),
+  moto: c => ({
+    b:`<path d="M-11,-7 L-3,-13 L5,-13 L11,-7 M-3,-13 L1,-19" stroke="${c}" ${ST}/>
+       <path d="M0,-19 L3,-27 M3,-26 L10,-20" stroke="${c}" ${ST}/>
+       <circle cx="5" cy="-30" r="4.2" fill="${c}"/>`,
+    w:[{cx:-11,cy:-7,r:7},{cx:11,cy:-7,r:7}]
+  }),
+  boat: c => ({
+    b:`<path d="M-19,-5 L19,-5 L13,-13 L-13,-13 Z" stroke="${c}" ${ST}/>
+       <path d="M-7,-13 L-7,-23 L7,-23 L7,-13" stroke="${c}" ${ST}/>
+       <path d="M-2,-19 L3,-19" stroke="${c}" fill="none" stroke-width="1.4" opacity=".55"/>`,
+    bob:true
+  }),
+  skier: c => ({
+    b:`<circle cx="1" cy="-32" r="4.4" fill="${c}"/>
+       <path d="M1,-27 L-2,-14 M0,-24 L-11,-3 M0,-23 L9,-6" stroke="${c}" ${ST}/>
+       <path d="M-2,-14 L-5,-2 M-2,-14 L4,-3" stroke="${c}" ${ST}/>
+       <path d="M-15,-1 L18,-1" stroke="${c}" fill="none" stroke-width="2.6" stroke-linecap="round"/>`
+  }),
+  tractor: c => ({
+    b:`<path d="M-11,-16 L-11,-24 L-1,-24 L1,-17 L14,-17 L14,-9" stroke="${c}" ${ST}/>`,
+    w:[{cx:-11,cy:-10,r:10},{cx:13,cy:-6,r:6}]
+  }),
+  animal: c => ({
+    b:`<ellipse cx="-2" cy="-11" rx="11" ry="5.5" stroke="${c}" ${ST}/>
+       <circle cx="11" cy="-16" r="4.6" fill="${c}"/>
+       <path d="M13,-20 L14,-25 M-13,-12 L-18,-17" stroke="${c}" ${ST}/>`,
+    g:{hx:-2,hy:-7,len:7,amp:26,legs:4}, gc:c
+  }),
+  dot: c => ({ b:`<circle cx="0" cy="-11" r="10" fill="${c}"/>` })
+};
+
+// қай сөзді қандай фигурамен салатынымыз
+const FIG_MAP = {
+  "Велосипедші":"cyclist","Самокат":"cyclist",
+  "Жаяу жүргінші":"walker","Ұл бала":"walker","Қыз бала":"walker",
+  "Турист":"walker","Жүгіруші":"walker","Жүзуші":"walker",
+  "Шаңғышы":"skier",
+  "Автомобиль":"car","Машина":"car","Көлік":"car","Жүргізуші":"car",
+  "Жүк көлігі":"truck","Автобус":"bus",
+  "Пойыз":"train","Электр пойызы":"train",
+  "Мотоциклші":"moto","Мотоцикл":"moto",
+  "Катер":"boat","Қайық":"boat","Кеме":"boat","Сал":"boat",
+  "Баржа":"boat","Яхта":"boat","Каяк":"boat","Байдарка":"boat",
+  "Трактор":"tractor","Салт атты":"animal",
+  "Ит":"animal","Қоян":"animal","Тасбақа":"animal","Қасқыр":"animal"
+};
+// «Ұл бала 1» мен «Ұл бала 2» — бір фигура, нөмірді қатысушыларды
+// ажырату үшін талдаушы қосты
+const baseName = n => String(n||"").replace(/\s+\d+$/,"");
+const figFor = name => FIG[FIG_MAP[baseName(name)] || "dot"];
+
+function wheelSvg(w,c){
+  return `<g class="wh" data-cx="${w.cx}" data-cy="${w.cy}" data-r="${w.r}">
+    <circle cx="${w.cx}" cy="${w.cy}" r="${w.r}" fill="none" stroke="${c}" stroke-width="2"/>
+    <line x1="${w.cx-w.r}" y1="${w.cy}" x2="${w.cx+w.r}" y2="${w.cy}" stroke="${c}" stroke-width="1.3" opacity=".5"/>
+    <line x1="${w.cx}" y1="${w.cy-w.r}" x2="${w.cx}" y2="${w.cy+w.r}" stroke="${c}" stroke-width="1.3" opacity=".5"/>
+  </g>`;
+}
+function legSvg(g,c,i){
+  const spread = g.legs===4 ? (i<2 ? -8 : 6) : 0;
+  return `<g class="lg" data-hx="${g.hx+spread}" data-hy="${g.hy}">
+    <line x1="${g.hx+spread}" y1="${g.hy}" x2="${g.hx+spread}" y2="${g.hy+g.len}"
+          stroke="${c}" stroke-width="2.2" stroke-linecap="round"/></g>`;
+}
+
+// Фигураны толық құрастырады. Сыртқы топ жылжытады, ішкі топ дене
+// солға қарай жүрсе, көлденең шағылыстырады.
+function buildFigure(host, name, color, scale){
+  const f = figFor(name)(color);
+  const wheels = (f.w||[]).map(w=>wheelSvg(w,color)).join("");
+  const legs = f.g ? Array.from({length:f.g.legs},(_,i)=>legSvg(f.g,f.gc||color,i)).join("") : "";
+  host.innerHTML = `<g class="pos"><g class="flip" transform="scale(1,1)">
+    ${legs}${f.b}${wheels}</g></g>`;
+  return {spec:f, scale};
+}
+
+function poseFigure(host, fig, x, y, dir, travelPx){
+  const pos = host.querySelector(".pos");
+  const flip = host.querySelector(".flip");
+  const S = fig.scale;
+  let dy = 0;
+  if(fig.spec.bob) dy = Math.sin(travelPx/22)*2.2;   // кеме шайқалады
+  pos.setAttribute("transform", `translate(${x.toFixed(2)},${(y+dy).toFixed(2)}) scale(${S})`);
+  flip.setAttribute("transform", `scale(${dir<0?-1:1},1)`);
+
+  host.querySelectorAll(".wh").forEach(g=>{
+    const r = +g.dataset.r, cx = +g.dataset.cx, cy = +g.dataset.cy;
+    const ang = (travelPx/(r*S)) * 180/Math.PI;      // сырғанаусыз шынайы домалау
+    g.setAttribute("transform", `rotate(${ang.toFixed(1)},${cx},${cy})`);
+  });
+  const legs = host.querySelectorAll(".lg");
+  if(legs.length){
+    const g = fig.spec.g;
+    legs.forEach((el,i)=>{
+      const phase = travelPx/13 + (i%2)*Math.PI;
+      const ang = Math.sin(phase)*g.amp;
+      el.setAttribute("transform", `rotate(${ang.toFixed(1)},${el.dataset.hx},${el.dataset.hy})`);
+    });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   5. 1-САХНА — сан осіндегі координаталар
+   ═══════════════════════════════════════════════════════════ */
+
+const SVG={x0:70,x1:930,y:200};
+let scene=null, playing=false, rate=1, lastFrame=0, MODE="move", useFigs=true;
+
+function buildSceneMove(m,res){
+  const [v1,v2]=m.speeds;
+  let posA,posB,tEnd,meetT=null;
+
+  if(m.type==="apart"){
+    tEnd = (res.unit==="distance" && m.time) ? m.time*1.1 : 3;
+    posA = t => -v1*t;  posB = t => v2*t;
+  } else if(m.type==="chase"){
+    const fast=Math.max(v1,v2), slow=Math.min(v1,v2), D=m.distance||0;
+    tEnd = res.unit==="time" ? res.value*1.25 : (m.time||3)*1.1;
+    meetT = res.unit==="time" ? res.value : null;
+    posA = t => fast*t;  posB = t => D + slow*t;
+  } else {
+    const D=m.distance||0;
+    tEnd = res.unit==="time" ? res.value*1.25 : (m.time||3)*1.1;
+    meetT = res.unit==="time" ? res.value : null;
+    posA = t => v1*t;  posB = t => D - v2*t;
+  }
+
+  const cand=[posA(0),posB(0),posA(tEnd),posB(tEnd)];
+  let lo=Math.min(...cand), hi=Math.max(...cand);
+  const pad=(hi-lo)*0.08 || 1;
+  lo-=pad; hi+=pad;
+
+  scene={kind:"move",m,res,posA,posB,tEnd,meetT,lo,hi,t:0,
+    names:m.names, speeds:[v1,v2]};
+  if(m.type==="chase" && v2>v1){ scene.names=[m.names[1],m.names[0]]; scene.speeds=[v2,v1]; }
+
+  scene.dirA = Math.sign(posA(tEnd)-posA(0)) || 1;
+  scene.dirB = Math.sign(posB(tEnd)-posB(0)) || -1;
+  scene.x0A = null;
+
+  const name0 = useFigs ? scene.names[0] : "—";
+  const name1 = useFigs ? scene.names[1] : "—";
+  scene.figA = buildFigure($("figA"), name0, "var(--a)", 1.7);
+  scene.figB = buildFigure($("figB"), name1, "var(--b)", 1.7);
+
+  drawTicks();
+  $("meetLine").style.display="none";
+  $("meetLab").style.display="none";
+  setT(0); pause();
+}
+
+const X = v => SVG.x0 + (v-scene.lo)/(scene.hi-scene.lo)*(SVG.x1-SVG.x0);
+
+function niceStep(range){
+  const steps=[.1,.25,.5,1,2,2.5,5,10,20,25,50,100,200,250,500,1000];
+  for(const s of steps) if(range/s<=10) return s;
+  return 1000;
+}
+
+function drawTicks(){
+  const g=$("ticks"); g.innerHTML="";
+  const step=niceStep(scene.hi-scene.lo);
+  const start=Math.ceil(scene.lo/step)*step;
+  for(let v=start; v<=scene.hi+1e-9; v+=step){
+    const x=X(v);
+    if(x<SVG.x0-1||x>SVG.x1+1) continue;
+    g.insertAdjacentHTML("beforeend",
+      `<line class="tick" x1="${x.toFixed(1)}" y1="196" x2="${x.toFixed(1)}" y2="208"/>
+       <text class="ticklab" x="${x.toFixed(1)}" y="226" text-anchor="middle">${fmt(v)}</text>`);
+  }
+}
+
+function setTMove(tt){
+  const a=scene.posA(tt), b=scene.posB(tt);
+  const xa=X(a), xb=X(b);
+  if(scene.x0A===null){ scene.x0A=X(scene.posA(0)); scene.x0B=X(scene.posB(0)); }
+
+  poseFigure($("figA"), scene.figA, xa, SVG.y, scene.dirA, Math.abs(xa-scene.x0A));
+  poseFigure($("figB"), scene.figB, xb, SVG.y, scene.dirB, Math.abs(xb-scene.x0B));
+  // денелер жақындағанда жазулар екі жаққа ажырайды,
+  // әйтпесе кездескен сәтте екі ат бір-бірінің үстіне түседі
+  const close = Math.abs(xa-xb) < 130;
+  const lo=Math.min(xa,xb), hi=Math.max(xa,xb);
+  label("bodyA", close ? Math.max(lo-16,120) : xa, scene.names[0], scene.speeds[0], close?"end":"middle");
+  label("bodyB", close ? Math.min(hi+16,880) : xb, scene.names[1], scene.speeds[1], close?"start":"middle");
+
+  const gapKm=Math.abs(b-a);
+  $("gapLine").setAttribute("x1",Math.min(xa,xb));
+  $("gapLine").setAttribute("x2",Math.max(xa,xb));
+  const lab=$("gapLab");
+  lab.setAttribute("x",(xa+xb)/2);
+  lab.textContent = gapKm<0.05 ? "0 км" : fmt(gapKm)+" км";
+  $("clockMove").textContent = hoursLabel(tt);
+
+  if(scene.meetT!==null && tt>=scene.meetT-1e-9){
+    const xm=X(scene.posA(scene.meetT));
+    const ml=$("meetLine"), mt=$("meetLab");
+    ml.setAttribute("x1",xm); ml.setAttribute("x2",xm); ml.style.display="";
+    mt.setAttribute("x",xm); mt.style.display="";
+  }
+}
+
+function label(id,x,name,v,anchor){
+  const txt=$(id).querySelectorAll("text");
+  txt.forEach(t=>{ t.setAttribute("x",x); t.setAttribute("text-anchor",anchor||"middle"); });
+  txt[0].textContent=name;
+  txt[1].textContent=fmt(v)+" км/сағ";
+}
+
+/* ═══════════════════════════════════════════════════════════
+   6. 2-САХНА — резервуарды толтыру
+   ═══════════════════════════════════════════════════════════ */
+
+const TANK={x:392, y:62, w:216, h:198, bottom:260, base:56};
+
+// резервуар үстіндегі фигуралар: кран, сорғы, жұмысшы. Координата
+// басы — судың құйылатын немесе жұмыстың шығатын нүктесі.
+const WFIG = {
+  faucet: c => `<path d="M0,-3 L0,-12 L-15,-12 L-15,-30" stroke="${c}" fill="none" stroke-width="3.4" stroke-linecap="round"/>
+    <circle cx="-15" cy="-32" r="4.4" fill="none" stroke="${c}" stroke-width="2.4"/>
+    <path d="M-20,-32 L-10,-32" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/>
+    <rect x="-4.5" y="-8" width="9" height="7" rx="1.6" fill="${c}"/>`,
+  pump: c => `<rect x="-11" y="-32" width="22" height="20" rx="3" fill="none" stroke="${c}" stroke-width="2.4"/>
+    <circle cx="0" cy="-22" r="4.4" fill="none" stroke="${c}" stroke-width="1.8"/>
+    <path d="M0,-12 L0,-2" stroke="${c}" fill="none" stroke-width="3.4" stroke-linecap="round"/>
+    <path d="M-11,-28 L-17,-28" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/>`,
+  worker: c => `<path d="M-6,-34 Q0,-40 6,-34 Z" fill="${c}"/>
+    <circle cx="0" cy="-30" r="4.4" fill="${c}"/>
+    <path d="M0,-25 L0,-13 M0,-22 L-7,-15 M0,-22 L7,-16 M0,-13 L-5,-1 M0,-13 L5,-1"
+          stroke="${c}" fill="none" stroke-width="2.2" stroke-linecap="round"/>`
+};
+function wfigFor(noun){
+  if(!noun) return "worker";
+  if(/құбыр|кран/i.test(noun)) return "faucet";
+  if(/сорғы|машина|станок|принтер|комбайн|экскаватор/i.test(noun)) return "pump";
+  return "worker";
+}
+
+function buildSceneWork(m,res){
+  const parts=res.parts;
+  scene={kind:"work", m, res, parts, tEnd:res.tEnd, t:0, unit:m.unit};
+
+  const kind = wfigFor(m.noun);
+  const isWorker = kind==="worker";
+  const fillers = parts.filter(p=>p.sign>0);
+  const maxRate = Math.max(...parts.map(p=>Math.abs(p.rate)));
+  let fi=0;
+
+  let figs="";
+  parts.forEach((p,i)=>{
+    const color = p.sign<0 ? "var(--drain)" : COLORS[i%3];
+    if(p.sign<0){
+      p.px = TANK.x+TANK.w+26; p.py = TANK.bottom-14;
+      figs += `<path d="M${TANK.x+TANK.w-6},${TANK.bottom-14} L${p.px},${TANK.bottom-14} L${p.px},${TANK.bottom-4}"
+                 stroke="var(--drain)" fill="none" stroke-width="3.4" stroke-linecap="round"/>
+               <text class="legsub" x="${p.px+10}" y="${TANK.bottom-10}" fill="var(--drain)">ағызу</text>`;
+      return;
+    }
+    const x = TANK.x + TANK.w*((fi++)+0.5)/Math.max(fillers.length,1);
+    p.px = x; p.py = TANK.base - 2;
+    if(useFigs){
+      figs += `<g transform="translate(${x.toFixed(1)},${TANK.base})">${WFIG[kind](color)}</g>`;
+      if(isWorker) p.py = TANK.base - 14;
+    } else {
+      figs += `<line class="pipe" x1="${x.toFixed(1)}" y1="${TANK.base-26}" x2="${x.toFixed(1)}" y2="${TANK.base}" stroke="${color}"/>`;
+    }
+  });
+  $("workFigs").innerHTML = figs;
+
+  $("workFills").innerHTML = parts.map((p,i)=>
+    `<rect id="fill${i}" x="${TANK.x}" y="${TANK.bottom}" width="${TANK.w}" height="0" fill="${COLORS[i%3]}" opacity="${p.sign<0?0:0.8}"/>`
+  ).join("");
+
+  // тамшылар: жиілігі өнімділікке пропорционал, пішіні су құйылатынына
+  // немесе жұмыс орындалатынына байланысты
+  $("workParticles").innerHTML = parts.map((p,i)=>{
+    const color = p.sign<0 ? "var(--drain)" : COLORS[i%3];
+    p.rel = Math.abs(p.rate)/maxRate;
+    return Array.from({length:4},(_,k)=> isWorker && p.sign>0
+      ? `<rect id="pt${i}_${k}" x="${p.px-2.6}" y="${p.py}" width="5.2" height="5.2" rx="1" fill="${color}" opacity="0"/>`
+      : `<circle id="pt${i}_${k}" cx="${p.px}" cy="${p.py}" r="2.8" fill="${color}" opacity="0"/>`
+    ).join("");
+  }).join("");
+
+  $("tankLab").textContent = m.target;
+
+  const U=UNITS[m.unit];
+  $("workLegend").innerHTML = parts.map((p,i)=>{
+    const y=70+i*54, color = p.sign<0 ? "var(--drain)" : COLORS[i%3];
+    const Tu = round(p.T/U.mul);
+    const speedTxt = `${p.sign<0?"−":""}1/${fmt(Tu)} жұмыс / ${U.short}`;
+    return `<rect x="660" y="${y}" width="13" height="13" rx="2.5" fill="${color}"/>
+      <text class="legname" x="683" y="${y+12}" fill="${color}">${p.name}</text>
+      <text class="legsub" x="683" y="${y+31}">${speedTxt}</text>
+      <text class="legsub" id="leg${i}" x="683" y="${y+48}">үлесі 0%</text>`;
+  }).join("");
+
+  setT(0); pause();
+}
+
+function setTWork(tt){
+  const parts=scene.parts;
+  const contrib = parts.map(p=>p.rate*tt);
+  let net = contrib.reduce((a,b)=>a+b,0);
+  net = Math.max(0, Math.min(1, net));
+  const gross = contrib.reduce((a,c)=>a+(c>0?c:0),0) || 1;
+
+  let y = TANK.bottom;
+  parts.forEach((p,i)=>{
+    const share = contrib[i]>0 ? (contrib[i]/gross)*net : 0;
+    const h = share*TANK.h;
+    y -= h;
+    const r=$("fill"+i);
+    r.setAttribute("y", y.toFixed(2));
+    r.setAttribute("height", Math.max(h,0).toFixed(2));
+    const leg=$("leg"+i);
+    if(leg) leg.textContent = "үлесі "+Math.round(contrib[i]*100)+"%";
+  });
+
+  const surface = TANK.bottom - net*TANK.h;
+  const prog = tt/scene.tEnd;
+
+  parts.forEach((p,i)=>{
+    const down = p.sign<0;
+    const from = p.py, to = down ? TANK.bottom+30 : Math.max(surface, TANK.y+4);
+    for(let k=0;k<4;k++){
+      const el=$("pt"+i+"_"+k); if(!el) continue;
+      const ph = ((prog*11*p.rel + k/4) % 1 + 1) % 1;
+      const yy = from + ph*(to-from);
+      if(el.tagName==="rect") el.setAttribute("y", (yy-2.6).toFixed(1));
+      else el.setAttribute("cy", yy.toFixed(1));
+      el.setAttribute("opacity", (0.9*(1-ph*0.55) * (tt>0?1:0)).toFixed(2));
+    }
+  });
+
+  const w=$("wave");
+  if(net>0.002 && net<0.999){
+    const off=(prog*60)%36;
+    w.setAttribute("d", `M${TANK.x-40},${surface.toFixed(1)} q18,-4 36,0 t36,0 t36,0 t36,0 t36,0 t36,0 t36,0 t36,0`);
+    w.setAttribute("transform", `translate(${off.toFixed(1)},0)`);
+    w.setAttribute("stroke", COLORS[0]);
+    w.style.display="";
+  } else w.style.display="none";
+
+  $("clockWork").textContent = durShort(tt, scene.unit);
+  $("donePct").textContent   = Math.round(net*100)+"%";
+  $("fullLine").style.display = net>=0.999 ? "" : "none";
+}
+
+/* ═══════════════════════════════════════════════════════════
+   7. ОРТАҚ ОЙНАТУ БАСҚАРУЫ
+   ═══════════════════════════════════════════════════════════ */
+
+function setT(t){
+  if(!scene) return;
+  scene.t = Math.max(0, Math.min(t, scene.tEnd));
+  if(scene.kind==="move") setTMove(scene.t);
+  else if(scene.kind==="river") setTRiver(scene.t);
+  else setTWork(scene.t);
+  $("scrub").value = Math.round(scene.t/scene.tEnd*1000);
+}
+
+function frame(ts){
+  if(!playing){ lastFrame=ts; return; }
+  const dt=Math.min((ts-lastFrame)/1000, 0.05); lastFrame=ts;
+  setT(scene.t + dt*rate*(scene.tEnd/6));
+  if(scene.t>=scene.tEnd){ pause(); return; }
+  requestAnimationFrame(frame);
+}
+function play(){
+  if(!scene) return;
+  if(scene.t>=scene.tEnd) setT(0);
+  playing=true; $("play").textContent="Кідірту";
+  lastFrame=performance.now(); requestAnimationFrame(frame);
+}
+function pause(){ playing=false; $("play").textContent="Бастау"; }
+
+/* ═══════════════════════════════════════════════════════════
+   8. ӨЗЕН БОЙЫМЕН ҚОЗҒАЛЫС ЕСЕПТЕРІ
+   Ағыс әрқашан оңға қарай бағытталған. Ағыс бойымен жылдамдықтар
+   қосылады, ағысқа қарсы — азаяды. Сахна мұны бірінен соң бірі
+   қойылған екі бағдаршамен көрсетеді.
+   ═══════════════════════════════════════════════════════════ */
+
+// «сал» — қысқа сөз, сондықтан оны сөз шегімен бөлек тексереміз:
+// «салыстыру», «салды» сияқты сөздер қайық болып саналмауы керек.
+const RE_RAFT = new RegExp("(?:^|[^" + KZ + "])сал(?:дың|ды|ға|да|дан|мен|ы)?(?![" + KZ + "])");
+
+const RIVER_NOUNS = [
+  [/теплоход|параход|кеме/, "Кеме"],
+  [/катер/,    "Катер"],
+  [/қайы[қғ]/, "Қайық"],
+  [/баржа/,    "Баржа"],
+  [/яхта/,     "Яхта"],
+  [/каяк/,     "Каяк"],
+  [/байдарка/, "Байдарка"],
+  [RE_RAFT,    "Сал"]
+];
+
+const RIVER_ASK = [
+  {re:/меншікті\s+жылдамдығын\s+та[пб]|меншікті\s+жылдамдығы\s+қандай|меншікті\s+жылдамдығы\s+қанша|меншікті\s+жылдамдығы\s+неге\s+тең|өз\s+жылдамдығын\s+та[пб]/,
+   ask:"own", label:"меншікті жылдамдық"},
+  {re:/ағыс[а-яәғіқңөұүһ]*\s+жылдамдығын\s+та[пб]|ағыс[а-яәғіқңөұүһ]*\s+жылдамдығы\s+қандай|ағыс[а-яәғіқңөұүһ]*\s+жылдамдығы\s+қанша|ағыс[а-яәғіқңөұүһ]*\s+жылдамдығы\s*\?/,
+   ask:"current", label:"ағыс жылдамдығы"},
+  {re:/қанша\s+уақыт|неше\s+сағат|қанша\s+сағат|неше\s+минут|қанша\s+минут|уақыттан\s+кейін|қанша\s+уақытқа/,
+   ask:"time", label:"уақыт"},
+  {re:/қанша\s+километр|неше\s+километр|қанша\s+шақырым|қандай\s+қашықтық|қандай\s+жол|неше\s+км|қанша\s+км/,
+   ask:"distance", label:"қашықтық"},
+  {re:/жылдамдығын\s+та[пб]|жылдамдықты\s+та[пб]|қандай\s+жылдамдық|жылдамдығы\s+қандай/,
+   ask:"speed", label:"ағыс бойымен және ағысқа қарсы жылдамдық"}
+];
+
+function parseRiver(text){
+  const trace=[];
+  const hit =s=>trace.push({cls:"hit", t:s});
+  const miss=s=>trace.push({cls:"miss",t:s});
+  const note=s=>trace.push({cls:"",    t:s});
+
+  const s = normalize(text);
+  const model={kind:"river", own:null, cur:null, distance:null, time:null,
+               dir:1, round:false, ask:null, noun:"Катер", trace};
+
+  /* — кім жүзеді — */
+  for(const [re,name] of RIVER_NOUNS){
+    if(re.test(s)){ model.noun=name; hit(`кеме: ${name}`); break; }
+  }
+
+  /* — жылдамдықтар: сан алдындағы сөздерге қарап кімнің жылдамдығы екенін шешеміз — */
+  const sp = findAll(s, RE_SPEED);
+  const masked0 = maskOut(s, sp);
+  const spare=[];
+  let prevEnd=0;
+  for(const x of sp){
+    const win = s.slice(prevEnd, x.index);
+    prevEnd = x.index + x.len;
+    const v = round(toKmh(x.value, x.unit));
+    if(/меншікті|өз\s+жылдамдығ|тынық\s+су|көлде|ағынсыз|ағыссыз/.test(win) && model.own===null){
+      model.own=v; hit(`меншікті жылдамдық: «${x.raw}» (сан алдында «меншікті»)`);
+    } else if(/ағыс/.test(win) && model.cur===null){
+      model.cur=v; hit(`ағыс жылдамдығы: «${x.raw}» (сан алдында «ағыс»)`);
+    } else { spare.push({v, raw:x.raw}); }
+  }
+  // белгілер жетпесе, оқулықтағы әдеттегі тәртіпті аламыз
+  if(model.own===null && spare.length){ const x=spare.shift();
+    model.own=x.v; miss(`«${x.raw}» тұру тәртібі бойынша меншікті жылдамдыққа жатқызылды`); }
+  if(model.cur===null && spare.length){ const x=spare.shift();
+    model.cur=x.v; miss(`«${x.raw}» тұру тәртібі бойынша ағыс жылдамдығына жатқызылды`); }
+
+  /* — салдың меншікті жылдамдығы жоқ, ол сумен бірге қозғалады — */
+  if(RE_RAFT.test(s) && model.own===null){ model.own=0; hit("сал: меншікті жылдамдығы нөлге тең"); }
+
+  /* — қашықтық пен уақыт — */
+  let masked = masked0;
+  const dists = findAll(masked, RE_DIST);
+  if(dists.length){
+    model.distance = toKm(dists[0].value, dists[0].unit);
+    hit(`қашықтық: «${dists[0].raw}» → ${fmt(model.distance)} км`);
+    masked = maskOut(masked, dists);
+  } else note("шартта қашықтық берілмеген");
+
+  const times = findAll(masked, RE_TIME);
+  if(times.length){
+    model.time = toH(times[0].value, times[0].unit);
+    hit(`уақыт: «${times[0].raw}» → ${fmt(model.time)} сағат`);
+  } else note("шартта уақыт берілмеген");
+
+  /* — бағыт — */
+  const up   = /ағысқа\s+қарсы|ағысқа\s+қарама-қарсы|өзенге\s+қарсы|жоғары\s+қарай/.test(s);
+  const down = /ағыс\s+бойымен|ағыспен|ағысымен|ағысты\s+бойлай|төмен\s+қарай/.test(s);
+  model.dir = (up && !down) ? -1 : 1;
+  if(up && down) hit("шартта «ағыс бойымен» де, «ағысқа қарсы» да бар");
+  else if(up)    hit("бағыт: ағысқа қарсы");
+  else if(down)  hit("бағыт: ағыс бойымен");
+  else           miss("бағыт көрсетілмеген → ағыс бойымен деп есептеймін");
+
+  /* — нені сұрайды — */
+  for(const r of RIVER_ASK){
+    if(r.re.test(s)){ model.ask=r.ask; hit(`ізделінді шама: ${r.label}`); break; }
+  }
+  if(!model.ask){ model.ask="time"; miss("сұрақ танылмады → уақытты іздеймін"); }
+
+  /* — барып-қайту жолы — */
+  model.round = /кері\s+қайт|қайтып\s+орал|барып\s+қайт|екі\s+жаққа|бүкіл\s+жол|сол\s+жолмен\s+орал|кейін\s+қайт/.test(s)
+             || (up && down && model.distance!==null && (model.ask==="time"||model.ask==="distance"));
+  if(model.round) hit("барып-қайту жолы: жылдамдығы әртүрлі екі бөлік");
+
+  return model;
+}
+
+function solveRiver(m){
+  const own=m.own, cur=m.cur, D=m.distance, t=m.time;
+  const noCur  = {error:"Ағыс жылдамдығын таба алмадым. Мысалы «ағыс жылдамдығы 3 км/сағ» деп қосыңыз."};
+  const noOwn  = {error:"Кеменің меншікті жылдамдығын таба алмадым. Мысалы «катердің меншікті жылдамдығы 15 км/сағ» деп қосыңыз."};
+  const noDist = {error:"Қашықтықты таба алмадым. Мысалы «ағыс бойымен 36 км жүзді» деп қосыңыз."};
+  const noTime = {error:"Уақытты таба алмадым. Мысалы «3 сағатта» деп қосыңыз."};
+
+  const vd = (own!==null && cur!==null) ? own+cur : null;
+  const vu = (own!==null && cur!==null) ? own-cur : null;
+  const dirName = d => d>0 ? "ағыс бойымен" : "ағысқа қарсы";
+  const upFail = {error:"Ағысқа қарсы кеме жылжымайды: меншікті жылдамдығы ағыс жылдамдығынан артық емес."};
+
+  /* ——— уақытты іздеу ——— */
+  if(m.ask==="time"){
+    if(cur===null) return noCur;
+    if(own===null) return noOwn;
+    if(D===null)   return noDist;
+    if(m.round){
+      if(vu<=0) return upFail;
+      const t1=D/vd, t2=D/vu;
+      return {value:t1+t2, unit:"time", tEnd:(t1+t2)*1.03,
+        legs:[{dir:1,v:vd,D,t:t1,name:"ағыс бойымен"},{dir:-1,v:vu,D,t:t2,name:"ағысқа қарсы"}],
+        own, cur,
+        steps:[
+          `ағыс бойымен жылдамдық: ${fmt(own)} + ${fmt(cur)} = ${fmt(vd)} км/сағ`,
+          `ағысқа қарсы жылдамдық: ${fmt(own)} − ${fmt(cur)} = ${fmt(vu)} км/сағ`,
+          `барғанда: ${fmt(D)} : ${fmt(vd)} = ${fmt(t1)} сағат`,
+          `қайтқанда: ${fmt(D)} : ${fmt(vu)} = ${fmt(t2)} сағат`,
+          `барлығы: ${fmt(t1)} + ${fmt(t2)} = ${fmt(t1+t2)} сағат`
+        ],
+        label:`Бүкіл жол ${hoursLabel(t1+t2)} уақыт алды`};
+    }
+    const v = m.dir>0 ? vd : vu;
+    if(v<=0) return upFail;
+    const ans=D/v;
+    return {value:ans, unit:"time", tEnd:ans*1.05,
+      legs:[{dir:m.dir, v, D, t:ans, name:dirName(m.dir)}], own, cur,
+      steps:[
+        `${dirName(m.dir)} жылдамдық: ${fmt(own)} ${m.dir>0?"+":"−"} ${fmt(cur)} = ${fmt(v)} км/сағ`,
+        `уақыт: ${fmt(D)} : ${fmt(v)} = ${fmt(ans)} сағат`
+      ],
+      label:`Жол ${hoursLabel(ans)} уақыт алды`};
+  }
+
+  /* ——— қашықтықты іздеу ——— */
+  if(m.ask==="distance"){
+    if(cur===null) return noCur;
+    if(own===null) return noOwn;
+    if(t===null)   return noTime;
+    const v = m.dir>0 ? vd : vu;
+    if(v<=0) return upFail;
+    const ans=v*t;
+    return {value:ans, unit:"distance", tEnd:t*1.05,
+      legs:[{dir:m.dir, v, D:ans, t, name:dirName(m.dir)}], own, cur,
+      steps:[
+        `${dirName(m.dir)} жылдамдық: ${fmt(own)} ${m.dir>0?"+":"−"} ${fmt(cur)} = ${fmt(v)} км/сағ`,
+        `қашықтық: ${fmt(v)} · ${fmt(t)} = ${fmt(ans)} км`
+      ],
+      label:`${fmt(ans)} км жүзіп өтті`};
+  }
+
+  /* ——— меншікті жылдамдықты іздеу ——— */
+  if(m.ask==="own"){
+    if(cur===null) return noCur;
+    if(D===null)   return noDist;
+    if(t===null)   return noTime;
+    const vf = D/t;                                  // осы бөліктегі жылдамдық
+    const ans = m.dir>0 ? vf-cur : vf+cur;
+    if(ans<=0) return {error:"Меншікті жылдамдық теріс немесе нөл болып шықты — сандарды тексеріңіз."};
+    return {value:ans, unit:"speed", tEnd:t*1.05,
+      legs:[{dir:m.dir, v:vf, D, t, name:dirName(m.dir)}], own:ans, cur,
+      steps:[
+        `${dirName(m.dir)} жылдамдық: ${fmt(D)} : ${fmt(t)} = ${fmt(vf)} км/сағ`,
+        `меншікті жылдамдық: ${fmt(vf)} ${m.dir>0?"−":"+"} ${fmt(cur)} = ${fmt(ans)} км/сағ`
+      ],
+      label:`Меншікті жылдамдық ${fmt(ans)} км/сағ`};
+  }
+
+  /* ——— ағыс жылдамдығын іздеу ——— */
+  if(m.ask==="current"){
+    if(own===null) return noOwn;
+    if(D===null)   return noDist;
+    if(t===null)   return noTime;
+    const vf = D/t;
+    const ans = m.dir>0 ? vf-own : own-vf;
+    if(ans<0) return {error:"Ағыс жылдамдығы теріс болып шықты — сандарды тексеріңіз."};
+    return {value:ans, unit:"speed", tEnd:t*1.05,
+      legs:[{dir:m.dir, v:vf, D, t, name:dirName(m.dir)}], own, cur:ans,
+      steps:[
+        `${dirName(m.dir)} жылдамдық: ${fmt(D)} : ${fmt(t)} = ${fmt(vf)} км/сағ`,
+        `ағыс жылдамдығы: ${fmt(Math.abs(vf-own))} км/сағ`
+      ],
+      label:`Ағыс жылдамдығы ${fmt(ans)} км/сағ`};
+  }
+
+  /* ——— екі жылдамдықты іздеу: бір сағат барып, кері қайтуды көрсетеміз ——— */
+  if(m.ask==="speed"){
+    if(cur===null) return noCur;
+    if(own===null) return noOwn;
+    if(vu<=0) return upFail;
+    const D1=vd, t2=D1/vu;                           // бір сағат ағыспен, сосын кері
+    return {value:vd, unit:"speed", tEnd:(1+t2)*1.03,
+      legs:[{dir:1,v:vd,D:D1,t:1,name:"ағыс бойымен"},{dir:-1,v:vu,D:D1,t:t2,name:"ағысқа қарсы"}],
+      own, cur, demo:true,
+      steps:[
+        `ағыс бойымен: ${fmt(own)} + ${fmt(cur)} = ${fmt(vd)} км/сағ`,
+        `ағысқа қарсы: ${fmt(own)} − ${fmt(cur)} = ${fmt(vu)} км/сағ`,
+        `сахнада: бір сағат өзен бойымен төмен, сосын сол жолмен кері қайту`
+      ],
+      label:`Ағыс бойымен ${fmt(vd)} км/сағ, ағысқа қарсы ${fmt(vu)} км/сағ`};
+  }
+
+  return {error:"Бұл сұрақ әзірге қолданылмайды. «Өзен ағысы» қойындысы уақытты, қашықтықты, меншікті жылдамдықты және ағыс жылдамдығын табады."};
+}
+
+/* ——— өзен сахнасы ——— */
+
+const RIV={x0:70, x1:930, wl:186, bot:250, yComp:104, yRes:140};
+
+function riverPos(legs, t){
+  let x=0, acc=0;
+  for(const L of legs){
+    if(t <= acc + L.t + 1e-12) return {x: x + L.dir*L.v*(t-acc), leg:L};
+    x += L.dir*L.D; acc += L.t;
+  }
+  let xe=0; legs.forEach(L=>xe+=L.dir*L.D);
+  return {x:xe, leg:legs[legs.length-1]};
+}
+
+function buildSceneRiver(m,res){
+  const legs=res.legs;
+  const pts=[0]; let acc=0;
+  legs.forEach(L=>{ acc+=L.dir*L.D; pts.push(acc); });
+  let lo=Math.min(...pts), hi=Math.max(...pts);
+  const pad=(hi-lo)*0.09 || 1; lo-=pad; hi+=pad;
+
+  scene={kind:"river", m, res, legs, lo, hi, t:0, tEnd:res.tEnd,
+         own:res.own, cur:res.cur, noun:m.noun};
+  scene.kx = (RIV.x1-RIV.x0)/(hi-lo);               // километрге қанша пиксель
+  scene.ak = 150/Math.max(res.own+res.cur, 1);      // бағдаршаға: км/сағ-қа пиксель
+
+  // жаға бойындағы бөліктер
+  const g=$("riverTicks"); g.innerHTML="";
+  const step=niceStep(hi-lo), start=Math.ceil(lo/step)*step;
+  for(let v=start; v<=hi+1e-9; v+=step){
+    const x=RIV.x0+(v-lo)*scene.kx;
+    if(x<RIV.x0-1||x>RIV.x1+1) continue;
+    g.insertAdjacentHTML("beforeend",
+      `<line class="tick" x1="${x.toFixed(1)}" y1="${RIV.bot-4}" x2="${x.toFixed(1)}" y2="${RIV.bot+6}"/>
+       <text class="ticklab" x="${x.toFixed(1)}" y="${RIV.bot+24}" text-anchor="middle">${fmt(v)}</text>`);
+  }
+
+  // бөлік екі болса, бұрылыс нүктесі
+  if(legs.length>1){
+    const xt=RIV.x0+(pts[1]-lo)*scene.kx;
+    $("turnLine").setAttribute("x1",xt); $("turnLine").setAttribute("x2",xt);
+    $("turnLine").style.display="";
+    $("turnLab").setAttribute("x",xt); $("turnLab").style.display="";
+  } else { $("turnLine").style.display="none"; $("turnLab").style.display="none"; }
+
+  // су ағындары: ағыс жылдам болса, олар да жылдам жүгіреді
+  const rows=[198,210,222,234,244];
+  let w="";
+  rows.forEach((y,r)=>{
+    for(let i=0;i<9;i++){
+      const x0=RIV.x0+((i*97+r*41)%860);
+      w+=`<line class="stream" id="st${r}_${i}" data-x="${x0}" x1="${x0}" y1="${y}" x2="${x0+22}" y2="${y}" stroke="var(--a)" stroke-width="2.4" opacity="0.32" stroke-linecap="round"/>`;
+    }
+  });
+  $("streams").innerHTML=w;
+
+  scene.fig = buildFigure($("riverBoat"), useFigs ? scene.noun : "—", "var(--a)", 1.7);
+  setT(0); pause();
+}
+
+function arrowSvg(x1,y,x2,color,w){
+  const d = x2>=x1 ? 1 : -1;
+  if(Math.abs(x2-x1)<3) return "";
+  return `<line x1="${x1.toFixed(1)}" y1="${y}" x2="${(x2-d*7).toFixed(1)}" y2="${y}"
+            stroke="${color}" stroke-width="${w}" stroke-linecap="round"/>
+          <path d="M${x2.toFixed(1)},${y} L${(x2-d*9).toFixed(1)},${y-5} L${(x2-d*9).toFixed(1)},${y+5} Z" fill="${color}"/>`;
+}
+
+function setTRiver(tt){
+  const {legs, lo, kx, ak, own, cur} = scene;
+  const p = riverPos(legs, tt);
+  const x = RIV.x0 + (p.x - lo)*kx;
+  const dir = p.leg.dir;
+
+  poseFigure($("riverBoat"), scene.fig, x, RIV.wl, dir, Math.abs(x-RIV.x0));
+
+  // ағындарды ағыс ығыстырады
+  const shift = (cur*kx*tt) % 118;
+  $("streams").querySelectorAll(".stream").forEach(el=>{
+    const base=+el.dataset.x;
+    let nx = base + shift;
+    if(nx > RIV.x1) nx -= 860;
+    el.setAttribute("x1", nx.toFixed(1));
+    el.setAttribute("x2", (nx+22).toFixed(1));
+  });
+
+  // бағдаршалар: меншікті жылдамдық, сосын ағыс, төменде — нәтиже
+  const xo = x + dir*own*ak;            // меншікті жылдамдық бағдаршасының ұшы
+  const xc = xo + cur*ak;               // ағыс әрқашан оңға ығыстырады
+  const xr = x + dir*p.leg.v*ak;        // қорытынды жылдамдық
+  const mid=(a,b)=>(a+b)/2;
+  const L1=`өзінің ${fmt(own)}`, L2=`ағыс ${fmt(cur)}`;
+  const m1=mid(x,xo), m2=mid(xo,xc);
+  // қосылғыштардың жазулары жақындаса, екіншісін бір жол жоғары көтереміз
+  const clash = Math.abs(m1-m2) < (L1.length+L2.length)*3.7;
+  const y2 = clash ? RIV.yComp-28 : RIV.yComp-10;
+  const tag=(t,xx,yy,col)=>`<text class="veclab" x="${xx.toFixed(1)}" y="${yy}" text-anchor="middle" fill="${col}">${t}</text>`;
+  $("riverVec").innerHTML =
+    arrowSvg(x, RIV.yComp, xo, "var(--a)", 3.2) +
+    arrowSvg(xo, RIV.yComp, xc, "var(--c)", 3.2) +
+    arrowSvg(x, RIV.yRes, xr, "var(--b)", 4) +
+    (Math.abs(xo-x)>14 ? tag(L1, m1, RIV.yComp-10, "var(--a)") : "") +
+    (Math.abs(xc-xo)>14 ? tag(L2, m2, y2, "var(--c)") : "") +
+    tag(fmt(p.leg.v)+" км/сағ", mid(x,xr), RIV.yRes+22, "var(--b)");
+
+  $("clockRiver").textContent = hoursLabel(tt);
+  $("legName").textContent = p.leg.name;
+  $("riverPos").textContent = fmt(Math.round(p.x*10)/10)+" км";
+}
+
+/* ═══════════════════════════════════════════════════════════
+   9. ТАЛДАУДЫҢ НӘТИЖЕСІН ШЫҒАРУ
+   ═══════════════════════════════════════════════════════════ */
+
+function renderMove(m,res){
+  const json=JSON.stringify({
+    түрі:m.type, қатысушылар:m.names, жылдамдықтар_км_сағ:m.speeds,
+    қашықтық_км:m.distance, уақыт_сағат:m.time, ізделінді:m.ask
+  },null,1).replace(/"/g,"");
+
+  let html="";
+  if(res.error) html += `<div class="msg err">${res.error}</div>`;
+  html += `<dl class="kv">
+    <dt>Түрі</dt><dd>${m.typeLabel}</dd>
+    <dt>Кім қозғалады</dt><dd><span class="d0">●</span> ${m.names[0]||"—"} &nbsp; <span class="d1">●</span> ${m.names[1]||"—"}</dd>
+    <dt>Жылдамдықтар</dt><dd>${m.speeds.map(v=>fmt(v)+" км/сағ").join(" және ")||"—"}</dd>
+    <dt>Қашықтық</dt><dd>${m.distance!==null?fmt(m.distance)+" км":"берілмеген"}</dd>
+    <dt>Уақыт</dt><dd>${m.time!==null?fmt(m.time)+" сағат":"берілмеген"}</dd>
+  </dl>`;
+  if(!res.error){
+    html += `<div class="solution">${res.steps.join("<br>")}<br>
+      <span class="ans">Жауабы: ${res.unit==="time"?hoursLabel(res.value):fmt(res.value)+" км"}</span></div>`;
+  }
+  html += traceBlock(m, json);
+  $("out").innerHTML=html;
+}
+
+function renderWork(m,res){
+  const U=m.unit;
+  const json=JSON.stringify({
+    түрі: m.joint!==null ? "кері есеп" : "бірлескен жұмыс",
+    нысан: m.target,
+    бірлік: UNITS[U].short,
+    қатысушылар: m.parts.map(p=>({аты:p.name, мерзімі:round(p.T/UNITS[U].mul), таңбасы:p.sign})),
+    бірлескен_уақыт: m.joint!==null ? round(m.joint/UNITS[U].mul) : null
+  },null,1).replace(/"/g,"");
+
+  let html="";
+  if(res.error) html += `<div class="msg err">${res.error}</div>`;
+  html += `<dl class="kv">
+    <dt>Түрі</dt><dd>${m.joint!==null?"бірлескен уақыт белгілі, бір қатысушыны іздейміз":"әрқайсысы өз мерзімінде жұмыс істейді, бірлескен уақытты іздейміз"}</dd>
+    <dt>Нысан</dt><dd>${m.target}</dd>
+    <dt>Қатысушылар</dt><dd>${m.parts.length
+      ? m.parts.map((p,i)=>`<span class="d${i%3}">●</span> ${p.name} — ${durFull(p.T,U)}${p.sign<0?" (ағызу)":""}`).join("<br>")
+      : "—"}</dd>
+    ${m.joint!==null?`<dt>Бірге</dt><dd>${durFull(m.joint,U)}</dd>`:""}
+  </dl>`;
+  if(!res.error){
+    html += `<div class="solution">${res.steps.join("<br>")}<br>
+      <span class="ans">Жауабы: ${res.label}</span></div>`;
+  }
+  html += traceBlock(m, json);
+  $("out").innerHTML=html;
+}
+
+function renderRiver(m,res){
+  const json=JSON.stringify({
+    кеме:m.noun, меншікті_км_сағ:m.own, ағыс_км_сағ:m.cur,
+    қашықтық_км:m.distance, уақыт_сағат:m.time,
+    бағыт: m.dir>0?"ағыс бойымен":"ағысқа қарсы",
+    барып_қайту:m.round, ізделінді:m.ask
+  },null,1).replace(/"/g,"");
+
+  const vd = (m.own!==null&&m.cur!==null)?m.own+m.cur:null;
+  const vu = (m.own!==null&&m.cur!==null)?m.own-m.cur:null;
+
+  let html="";
+  if(res.error) html += `<div class="msg err">${res.error}</div>`;
+  html += `<dl class="kv">
+    <dt>Кеме</dt><dd>${m.noun}</dd>
+    <dt>Меншікті жылдамдық</dt><dd>${m.own!==null?fmt(m.own)+" км/сағ":"табылмады"}</dd>
+    <dt>Ағыс</dt><dd>${m.cur!==null?fmt(m.cur)+" км/сағ":"табылмады"}</dd>
+    <dt>Ағыс бойымен</dt><dd>${vd!==null?fmt(vd)+" км/сағ":"—"}</dd>
+    <dt>Ағысқа қарсы</dt><dd>${vu!==null?fmt(vu)+" км/сағ":"—"}</dd>
+    <dt>Жол</dt><dd>${m.round?"барып-қайту":(m.dir>0?"ағыс бойымен":"ағысқа қарсы")}</dd>
+  </dl>`;
+  if(!res.error){
+    html += `<div class="solution">${res.steps.join("<br>")}<br>
+      <span class="ans">Жауабы: ${res.label}</span></div>`;
+  }
+  html += traceBlock(m, json);
+  $("out").innerHTML=html;
+}
+
+function traceBlock(m, json){
+  return `<details><summary>Алгоритм қалай жұмыс істеді — ${m.trace.length} ереже іске қосылды</summary>
+    <ul class="trace">${m.trace.map(x=>`<li class="${x.cls}">${x.t}</li>`).join("")}</ul></details>
+    <details><summary>Анимацияға берілетін деректер құрылымы</summary>
+    <pre style="margin-top:10px">${json}</pre></details>`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   10. МЫСАЛ ЕСЕПТЕР
+   Әр мысал өз мәтінін өзі алып жүреді, сондықтан бет ешқандай
+   сыртқы деректер жиынтығына тәуелді емес.
+   ═══════════════════════════════════════════════════════════ */
+
+const EX_MOVE=[
+  {label:"Кездесу",
+   text:"Екі қаланың арасы 34 км. Олардан бір мезгілде велосипедші 12 км/сағ, ал жаяу жүргінші 5 км/сағ жылдамдықпен бір-біріне қарама-қарсы шықты. Олар қанша уақыттан кейін кездеседі?"},
+  {label:"Қуып жету",
+   text:"Жүк көлігі 50 км/сағ жылдамдықпен келе жатыр, оны автомобиль 80 км/сағ жылдамдықпен қуып жетуде. Қазір олардың арасы 90 км. Автомобиль жүк көлігін қанша уақыттан кейін қуып жетеді?"},
+  {label:"Қарама-қарсы бағытта",
+   text:"Бір бекеттен бір мезгілде қарама-қарсы бағыттарда турист 5 км/сағ, шаңғышы 12 км/сағ жылдамдықпен шықты. 3 сағаттан кейін олардың ара қашықтығы қандай болады?"},
+  {label:"Метр және минут",
+   text:"Ұл бала мен қыз бала бір-біріне қарама-қарсы жүгірді. Олардың арасы 600 м. Ұл баланың жылдамдығы 3 м/с, қыз баланың жылдамдығы 2 м/с. Олар қанша уақыттан кейін кездеседі?"},
+  {label:"Еркін тұжырым",
+   text:"Ержан 5 км/сағ жылдамдықпен үйінен шықты. Оған қарсы 3 км қашықтықтағы мектептен ит 10 км/сағ жылдамдықпен жүгірді. Кездескенге дейін қанша уақыт өтеді?"}
+];
+
+const EX_WORK=[
+  {label:"Екі құбыр",
+   text:"Бірінші құбыр бассейнді 3 сағатта толтырады, екінші құбыр 6 сағатта толтырады. Екі құбырды бірге ашса, бассейн қанша уақытта толады?"},
+  {label:"Ағызу құбыры",
+   text:"Бірінші құбыр арқылы бассейн 4 сағатта толады, екінші құбыр арқылы 6 сағатта босайды. Екі құбырды бірге ашса, бассейн қанша уақытта толады?"},
+  {label:"Үш құбыр",
+   text:"Бірінші құбыр бассейнді 6 сағатта, екінші құбыр 12 сағатта, үшінші құбыр 12 сағатта толтырады. Үш құбырды бірге ашса, бассейн қанша уақытта толады?"},
+  {label:"Кері есеп",
+   text:"Екі шебер бірге жұмыс істеп, тапсырысты 6 сағатта орындайды. Бірінші шебер бүкіл тапсырысты 10 сағатта орындай алады. Екінші шебер тапсырысты қанша уақытта орындайды?"},
+  {label:"Литр және минут",
+   text:"Бірінші сорғы 20 л/мин айдайды, екінші сорғы 30 л/мин айдайды. Бак 600 литр сыйдырады. Сорғылар бакты қанша уақытта толтырады?"},
+  {label:"Сағат емес, күн",
+   text:"Бір жұмысшы тапсырысты 12 күнде орындайды, екінші жұмысшы 24 күнде орындайды. Олар бірге жұмыс істесе, тапсырысты қанша күнде орындайды?"}
+];
+
+const EX_RIVER=[
+  {label:"Ағыс бойымен",
+   text:"Катердің меншікті жылдамдығы 15 км/сағ, өзен ағысының жылдамдығы 3 км/сағ. Катер ағыс бойымен 36 км жүзді. Ол бұл жолды қанша уақытта жүзіп өтті?"},
+  {label:"Ағысқа қарсы",
+   text:"Қайықтың тынық судағы жылдамдығы 8 км/сағ, ағыс жылдамдығы 2 км/сағ. Қайық ағысқа қарсы 18 км жүзді. Ол бұл жолды қанша уақытта жүзіп өтті?"},
+  {label:"Барып-қайту",
+   text:"Кеменің меншікті жылдамдығы 24 км/сағ, ағыс жылдамдығы 4 км/сағ. Кеме ағыс бойымен 56 км жүзіп барып, кері қайтты. Бүкіл жол қанша уақытқа созылды?"},
+  {label:"Меншікті жылдамдық",
+   text:"Катер ағыс бойымен 45 км жолды 3 сағатта жүзіп өтті. Ағыс жылдамдығы 2 км/сағ. Катердің меншікті жылдамдығын табыңдар."},
+  {label:"Екі жылдамдық",
+   text:"Катердің меншікті жылдамдығы 20 км/сағ, ағыс жылдамдығы 5 км/сағ. Катердің ағыс бойымен және ағысқа қарсы жылдамдығын табыңдар."},
+  {label:"Сал",
+   text:"Сал өзен ағысымен жүзіп барады. Ағыс жылдамдығы 4 км/сағ. Сал 20 км жолды қанша уақытта жүзіп өтеді?"}
+];
+
+/* ═══════════════════════════════════════════════════════════
+   11. БАЙЛАНЫСТЫРУ
+   ═══════════════════════════════════════════════════════════ */
+
+const CFG = {
+  move:{examples:EX_MOVE, parse:parseMove, solve:solveMove,
+        render:renderMove, build:buildSceneMove, svg:"sceneMove",
+        h1:"Қозғалыс есебіне берілген мәтін есепті анимацияға айналдыру",
+        lede:"Есеп шартын ережелерге негізделген алгоритм талдайды: тұрақты өрнектер өлшем бірлігі бар сандарды табады, сөздік — қатысушыларды, түйінді сөздер — қозғалыс түрін анықтайды. Төменде іске қосылған әрбір ереже көрсетілген."},
+  work:{examples:EX_WORK, parse:parseWork, solve:solveWork,
+        render:renderWork, build:buildSceneWork, svg:"sceneWork",
+        h1:"Бірлескен жұмысқа мәтін есеп: кім қанша пайыз жұмыс жасағаны су резервуары мысалы түрінде берілген",
+        lede:"Сол талдау тәсілі, бірақ басқа модель. Резервуар әртүрлі түсті жолақтармен толады — жолақтың биіктігі нақты қатысушының жұмыс үлесін көрсетеді. Ағызу құбыры деңгейді төмендетеді."},
+  river:{examples:EX_RIVER, parse:parseRiver, solve:solveRiver,
+        render:renderRiver, build:buildSceneRiver, svg:"sceneRiver",
+        h1:"Өзен бойымен: жылдамдықтардың қалай қосылатыны анимацияда көрсетіледі",
+        lede:"Екі бағдарша бірінен соң бірі тұр: кеменің меншікті жылдамдығы және ағыс жылдамдығы. Ағыс әрқашан оңға қарай ығыстырады, сондықтан ағысқа қарсы жүргенде екінші бағдарша біріншісінің бір бөлігін кемітеді. Төменгі бағдарша — нәтиже."}
+};
+
+const KZ_ONLY_MSG = `<div class="msg err"><b>Есеп шарты қазақ тілінде болуы керек.</b><br>
+  Мысалы: «Екі қаланың арасы 34 км. Олардан бір мезгілде велосипедші 12 км/сағ,
+  ал жаяу жүргінші 5 км/сағ жылдамдықпен бір-біріне қарама-қарсы шықты.
+  Олар қанша уақыттан кейін кездеседі?»</div>`;
+
+function run(){
+  const c=CFG[MODE];
+  const text=$("input").value.trim();
+  if(!text){ $("out").innerHTML=`<div class="msg err">Есеп шартын енгізіңіз немесе мысалды таңдаңыз.</div>`; return; }
+  if(!RE_KAZAKH.test(text.toLowerCase())){
+    pause(); $("out").innerHTML = KZ_ONLY_MSG; return;
+  }
+  const m=c.parse(text), res=c.solve(m);
+  c.render(m,res);
+  if(!res.error){ c.build(m,res); play(); }
+}
+
+function switchMode(mode){
+  MODE=mode; pause(); scene=null;
+  const c=CFG[mode];
+  document.querySelectorAll(".tab").forEach(b=>
+    b.setAttribute("aria-selected", String(b.dataset.mode===mode)));
+  Object.keys(CFG).forEach(k=>{ $(CFG[k].svg).style.display = (k===mode) ? "" : "none"; });
+  $("headline").textContent = c.h1;
+  $("lede").textContent = c.lede;
+  $("examples").innerHTML = c.examples.map((e,i)=>
+    `<button class="chip" data-ex="${i}">${e.label}</button>`).join("");
+  $("input").value = c.examples[0].text;
+  const m=c.parse($("input").value), res=c.solve(m);
+  c.render(m,res);
+  if(!res.error){
+    c.build(m,res);
+    if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches) play();
+  }
+}
+
+document.querySelector(".tabs").addEventListener("click",e=>{
+  const b=e.target.closest(".tab"); if(!b) return;
+  switchMode(b.dataset.mode);
+});
+$("examples").addEventListener("click",e=>{
+  const b=e.target.closest("[data-ex]"); if(!b) return;
+  $("input").value = CFG[MODE].examples[+b.dataset.ex].text;
+  run();
+});
+$("parse").addEventListener("click",run);
+$("clear").addEventListener("click",()=>{ $("input").value=""; $("input").focus(); });
+$("play").addEventListener("click",()=> playing?pause():play());
+$("reset").addEventListener("click",()=>{ pause(); if(scene) setT(0); });
+$("rate").addEventListener("click",e=>{
+  rate = rate===1?2 : rate===2?0.5 : 1;
+  e.target.textContent = (rate===0.5?"0,5":rate)+"×";
+});
+// «Фигуралар / нүктелер» ауыстырғышы. Ол сонымен бірге тәжірибе құралы:
+// екі топ оқушы бір есепті әртүрлі көрсетілімде көреді.
+$("figs").addEventListener("click",e=>{
+  useFigs = !useFigs;
+  e.target.setAttribute("aria-pressed", String(useFigs));
+  e.target.textContent = useFigs ? "Фигуралар" : "Нүктелер";
+  const wasPlaying = playing, at = scene ? scene.t : 0;
+  const c=CFG[MODE], m=c.parse($("input").value), res=c.solve(m);
+  if(!res.error){ c.build(m,res); setT(at); if(wasPlaying) play(); }
+});
+$("scrub").addEventListener("input",e=>{
+  if(!scene) return; pause(); setT(+e.target.value/1000*scene.tEnd);
+});
+
+switchMode("move");
+</script>
+</body>
+</html>
