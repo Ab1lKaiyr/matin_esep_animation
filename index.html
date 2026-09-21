@@ -139,6 +139,15 @@ summary:hover{color:var(--ink)}
 .solution .ans{font-size:17px;font-weight:600;color:var(--ok)}
 
 footer{color:var(--muted);font-size:14px;margin-top:26px}
+.qr{display:flex;gap:16px;align-items:center;flex-wrap:wrap;max-width:520px;
+  background:var(--surface);border:1px solid var(--rail-soft);border-radius:10px;
+  padding:14px 16px;box-shadow:var(--shadow);margin-bottom:18px}
+/* QR әрқашан ақ тақтада, қара модульмен: қараңғы тақырыпта да сканерленеді */
+.qr svg{display:block;flex:none;width:132px;height:132px;border-radius:6px}
+.qr b{display:block;color:var(--ink);font-size:15px;margin-bottom:3px}
+.qr p{margin:0 0 7px;font-size:13.5px;max-width:32ch}
+.qr a{color:var(--a);font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:12.5px;word-break:break-all}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -247,8 +256,22 @@ footer{color:var(--muted);font-size:14px;margin-top:26px}
   </div>
 </div>
 
-<footer>Талдау, сандық деректер және анимация тікелей браузерде орындалады.
-  Интернетке қосылу қажет емес — бет офлайн режимде жұмыс істейді.</footer>
+<footer>
+  <div class="qr">
+    <svg viewBox="0 0 45 45" shape-rendering="crispEdges" role="img"
+         aria-label="Бетті телефоннан ашуға арналған QR-код">
+      <rect width="45" height="45" fill="#FFFFFF"/>
+      <path fill="#16232E" d="M4 4h7v1h-7zM12 4h2v1h-2zM16 4h1v1h-1zM18 4h2v1h-2zM21 4h1v1h-1zM24 4h1v1h-1zM26 4h2v1h-2zM29 4h1v1h-1zM34 4h7v1h-7zM4 5h1v1h-1zM10 5h1v1h-1zM12 5h4v1h-4zM18 5h1v1h-1zM22 5h1v1h-1zM24 5h1v1h-1zM26 5h3v1h-3zM30 5h1v1h-1zM34 5h1v1h-1zM40 5h1v1h-1zM4 6h1v1h-1zM6 6h3v1h-3zM10 6h1v1h-1zM13 6h2v1h-2zM18 6h2v1h-2zM25 6h1v1h-1zM27 6h1v1h-1zM30 6h2v1h-2zM34 6h1v1h-1zM36 6h3v1h-3zM40 6h1v1h-1zM4 7h1v1h-1zM6 7h3v1h-3zM10 7h1v1h-1zM13 7h1v1h-1zM15 7h3v1h-3zM21 7h2v1h-2zM24 7h2v1h-2zM27 7h3v1h-3zM31 7h2v1h-2zM34 7h1v1h-1zM36 7h3v1h-3zM40 7h1v1h-1zM4 8h1v1h-1zM6 8h3v1h-3zM10 8h1v1h-1zM14 8h3v1h-3zM19 8h3v1h-3zM23 8h1v1h-1zM27 8h1v1h-1zM29 8h2v1h-2zM34 8h1v1h-1zM36 8h3v1h-3zM40 8h1v1h-1zM4 9h1v1h-1zM10 9h1v1h-1zM16 9h1v1h-1zM18 9h2v1h-2zM21 9h2v1h-2zM25 9h2v1h-2zM28 9h3v1h-3zM32 9h1v1h-1zM34 9h1v1h-1zM40 9h1v1h-1zM4 10h7v1h-7zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h1v1h-1zM28 10h1v1h-1zM30 10h1v1h-1zM32 10h1v1h-1zM34 10h7v1h-7zM13 11h1v1h-1zM16 11h1v1h-1zM19 11h1v1h-1zM23 11h1v1h-1zM26 11h2v1h-2zM29 11h1v1h-1zM31 11h2v1h-2zM5 12h1v1h-1zM10 12h3v1h-3zM15 12h1v1h-1zM18 12h4v1h-4zM24 12h1v1h-1zM27 12h2v1h-2zM30 12h1v1h-1zM32 12h2v1h-2zM39 12h2v1h-2zM7 13h1v1h-1zM11 13h2v1h-2zM14 13h2v1h-2zM24 13h4v1h-4zM29 13h2v1h-2zM32 13h1v1h-1zM34 13h1v1h-1zM36 13h1v1h-1zM39 13h1v1h-1zM4 14h1v1h-1zM6 14h1v1h-1zM8 14h3v1h-3zM12 14h1v1h-1zM14 14h1v1h-1zM16 14h1v1h-1zM19 14h4v1h-4zM25 14h1v1h-1zM29 14h4v1h-4zM34 14h3v1h-3zM39 14h2v1h-2zM4 15h1v1h-1zM7 15h1v1h-1zM11 15h1v1h-1zM13 15h2v1h-2zM16 15h3v1h-3zM20 15h1v1h-1zM26 15h1v1h-1zM28 15h1v1h-1zM30 15h1v1h-1zM34 15h4v1h-4zM39 15h2v1h-2zM4 16h2v1h-2zM7 16h1v1h-1zM10 16h1v1h-1zM12 16h3v1h-3zM16 16h2v1h-2zM19 16h3v1h-3zM24 16h1v1h-1zM28 16h1v1h-1zM31 16h2v1h-2zM34 16h1v1h-1zM36 16h2v1h-2zM39 16h2v1h-2zM4 17h2v1h-2zM7 17h1v1h-1zM14 17h1v1h-1zM17 17h1v1h-1zM21 17h1v1h-1zM23 17h1v1h-1zM27 17h1v1h-1zM31 17h3v1h-3zM35 17h1v1h-1zM38 17h2v1h-2zM5 18h1v1h-1zM7 18h4v1h-4zM13 18h1v1h-1zM16 18h1v1h-1zM19 18h4v1h-4zM24 18h2v1h-2zM30 18h5v1h-5zM36 18h2v1h-2zM39 18h2v1h-2zM7 19h1v1h-1zM9 19h1v1h-1zM14 19h3v1h-3zM19 19h1v1h-1zM21 19h1v1h-1zM23 19h2v1h-2zM28 19h1v1h-1zM31 19h3v1h-3zM35 19h1v1h-1zM37 19h4v1h-4zM4 20h2v1h-2zM7 20h2v1h-2zM10 20h1v1h-1zM13 20h2v1h-2zM16 20h4v1h-4zM22 20h1v1h-1zM24 20h2v1h-2zM29 20h3v1h-3zM33 20h2v1h-2zM36 20h1v1h-1zM38 20h1v1h-1zM5 21h5v1h-5zM12 21h1v1h-1zM14 21h2v1h-2zM17 21h1v1h-1zM20 21h1v1h-1zM23 21h1v1h-1zM25 21h2v1h-2zM28 21h1v1h-1zM31 21h2v1h-2zM35 21h1v1h-1zM38 21h1v1h-1zM5 22h1v1h-1zM8 22h1v1h-1zM10 22h1v1h-1zM12 22h2v1h-2zM15 22h1v1h-1zM19 22h1v1h-1zM21 22h4v1h-4zM26 22h2v1h-2zM29 22h4v1h-4zM35 22h1v1h-1zM38 22h1v1h-1zM40 22h1v1h-1zM4 23h2v1h-2zM11 23h2v1h-2zM17 23h7v1h-7zM26 23h1v1h-1zM28 23h1v1h-1zM32 23h2v1h-2zM35 23h3v1h-3zM39 23h2v1h-2zM6 24h1v1h-1zM8 24h1v1h-1zM10 24h1v1h-1zM12 24h1v1h-1zM16 24h1v1h-1zM19 24h1v1h-1zM22 24h1v1h-1zM26 24h1v1h-1zM28 24h1v1h-1zM30 24h2v1h-2zM33 24h4v1h-4zM38 24h1v1h-1zM40 24h1v1h-1zM4 25h2v1h-2zM13 25h6v1h-6zM20 25h1v1h-1zM22 25h1v1h-1zM24 25h4v1h-4zM31 25h2v1h-2zM35 25h4v1h-4zM4 26h4v1h-4zM9 26h3v1h-3zM15 26h1v1h-1zM19 26h1v1h-1zM21 26h1v1h-1zM26 26h1v1h-1zM31 26h1v1h-1zM34 26h1v1h-1zM37 26h1v1h-1zM39 26h2v1h-2zM5 27h2v1h-2zM9 27h1v1h-1zM11 27h1v1h-1zM14 27h1v1h-1zM16 27h1v1h-1zM18 27h1v1h-1zM21 27h2v1h-2zM26 27h1v1h-1zM28 27h1v1h-1zM30 27h2v1h-2zM34 27h2v1h-2zM37 27h1v1h-1zM40 27h1v1h-1zM4 28h3v1h-3zM8 28h7v1h-7zM16 28h1v1h-1zM20 28h3v1h-3zM24 28h1v1h-1zM27 28h4v1h-4zM32 28h4v1h-4zM37 28h1v1h-1zM40 28h1v1h-1zM4 29h1v1h-1zM11 29h1v1h-1zM14 29h1v1h-1zM17 29h4v1h-4zM23 29h1v1h-1zM25 29h1v1h-1zM27 29h1v1h-1zM30 29h1v1h-1zM32 29h1v1h-1zM34 29h1v1h-1zM37 29h2v1h-2zM4 30h1v1h-1zM8 30h1v1h-1zM10 30h1v1h-1zM12 30h1v1h-1zM15 30h2v1h-2zM20 30h1v1h-1zM23 30h4v1h-4zM28 30h1v1h-1zM34 30h1v1h-1zM36 30h1v1h-1zM38 30h3v1h-3zM4 31h1v1h-1zM7 31h3v1h-3zM11 31h1v1h-1zM13 31h1v1h-1zM18 31h1v1h-1zM23 31h1v1h-1zM27 31h1v1h-1zM31 31h1v1h-1zM33 31h1v1h-1zM35 31h1v1h-1zM37 31h4v1h-4zM4 32h1v1h-1zM9 32h2v1h-2zM12 32h1v1h-1zM16 32h1v1h-1zM18 32h1v1h-1zM20 32h3v1h-3zM26 32h2v1h-2zM29 32h2v1h-2zM32 32h8v1h-8zM12 33h2v1h-2zM16 33h1v1h-1zM18 33h1v1h-1zM22 33h1v1h-1zM24 33h2v1h-2zM27 33h2v1h-2zM31 33h2v1h-2zM36 33h2v1h-2zM4 34h7v1h-7zM12 34h4v1h-4zM17 34h2v1h-2zM21 34h3v1h-3zM27 34h2v1h-2zM30 34h1v1h-1zM32 34h1v1h-1zM34 34h1v1h-1zM36 34h3v1h-3zM40 34h1v1h-1zM4 35h1v1h-1zM10 35h1v1h-1zM13 35h2v1h-2zM16 35h1v1h-1zM18 35h1v1h-1zM20 35h1v1h-1zM22 35h1v1h-1zM25 35h1v1h-1zM27 35h2v1h-2zM31 35h2v1h-2zM36 35h2v1h-2zM39 35h2v1h-2zM4 36h1v1h-1zM6 36h3v1h-3zM10 36h1v1h-1zM13 36h1v1h-1zM15 36h1v1h-1zM17 36h1v1h-1zM19 36h2v1h-2zM22 36h1v1h-1zM24 36h3v1h-3zM28 36h2v1h-2zM31 36h6v1h-6zM38 36h1v1h-1zM40 36h1v1h-1zM4 37h1v1h-1zM6 37h3v1h-3zM10 37h1v1h-1zM14 37h1v1h-1zM16 37h2v1h-2zM20 37h3v1h-3zM24 37h1v1h-1zM26 37h1v1h-1zM29 37h4v1h-4zM34 37h1v1h-1zM38 37h2v1h-2zM4 38h1v1h-1zM6 38h3v1h-3zM10 38h1v1h-1zM15 38h2v1h-2zM18 38h3v1h-3zM22 38h1v1h-1zM24 38h2v1h-2zM27 38h4v1h-4zM33 38h1v1h-1zM35 38h1v1h-1zM37 38h2v1h-2zM40 38h1v1h-1zM4 39h1v1h-1zM10 39h1v1h-1zM12 39h4v1h-4zM18 39h2v1h-2zM21 39h2v1h-2zM26 39h2v1h-2zM30 39h3v1h-3zM35 39h1v1h-1zM40 39h1v1h-1zM4 40h7v1h-7zM16 40h6v1h-6zM23 40h1v1h-1zM28 40h1v1h-1zM32 40h1v1h-1zM34 40h2v1h-2zM37 40h1v1h-1zM40 40h1v1h-1z"/>
+    </svg>
+    <div>
+      <b>Телефоннан ашу</b>
+      <p>QR-кодты телефон камерасымен сканерлеңіз — бет телефонда ашылады.</p>
+      <a href="https://ab1lkaiyr.github.io/matin_esep_animation/">ab1lkaiyr.github.io/matin_esep_animation</a>
+    </div>
+  </div>
+  <p>Талдау, сандық деректер және анимация тікелей браузерде орындалады.
+  Интернетке қосылу қажет емес — бет офлайн режимде жұмыс істейді.</p>
+</footer>
 </div>
 
 <script>
